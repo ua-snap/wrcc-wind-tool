@@ -1,0 +1,15 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans:400,700&subset=latin-ext');
+@import url('https://fonts.googleapis.com/css?family=Cardo:400,400i,700&subset=latin-ext');
+
+html, body {
+	font-family: 'Cardo';
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-family: 'Open Sans';
+}
+
+/* We want vertical Checklists always. */
+.control label.checkbox {
+	display: block;
+}
