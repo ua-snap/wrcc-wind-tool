@@ -230,6 +230,7 @@ typography_section = html.Div(
     children=[
         html.H1('Typography', className='title is-1'),
         html.H3('Titles, text, and basic typography.', className='subtitle is-3'),
+        html.Hr(),
         html.Div(
             className='columns',
             children=[
@@ -278,7 +279,7 @@ typography_section = html.Div(
 * Boeing 787 bulletin
 * Washlet sophisticated
 
- Espresso cosy iconic charming Singapore craftsmanship. Porter airport Boeing 787 Washlet bespoke Nordic K-pop intricate Ginza. Singapore liveable sharp smart bespoke finest conversation Gaggenau Asia-Pacific.
+Espresso cosy iconic charming Singapore craftsmanship. Porter airport Boeing 787 Washlet bespoke Nordic K-pop intricate Ginza. Singapore liveable sharp smart bespoke finest conversation Gaggenau Asia-Pacific.
                             """,
                             className='is-size-4 content'
                         ),
@@ -287,11 +288,13 @@ typography_section = html.Div(
                             """
 *Paragraph text*, `is-size-6`.  **Sharp craftsmanship** sleepy, bureaux intricate cosy [Lufthansa Scandinavian exquisite](https://liveandletsfly.boardingarea.com/2018/06/28/lufthansa-first-class-houston/).
 
+
 * Flat white perfect,
 * Culpa handsome tote bag,
 * Occaecat Scandinavian Shinkansen,
 
- Espresso sharp iconic consectetur wardrobe, charming delightful ut eiusmod Comme des Garçons nisi conversation exercitation laboris Muji. Intricate finest dolor, Baggu liveable dolore id Melbourne Fast Lane Singapore. Lufthansa ut Shinkansen liveable.
+
+Espresso sharp iconic consectetur wardrobe, charming delightful ut eiusmod Comme des Garçons nisi conversation exercitation laboris Muji. Intricate finest dolor, Baggu liveable dolore id Melbourne Fast Lane Singapore. Lufthansa ut Shinkansen liveable.
 """,
                             className='is-size-6 content'
                         )
