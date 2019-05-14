@@ -1,3 +1,4 @@
+#pylint: disable=C0103,E0401
 '''
 Template for SNAP Dash apps.
 '''
