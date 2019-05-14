@@ -6,7 +6,6 @@ import plotly.graph_objs as go
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_dangerously_set_inner_html as ddsih
 
 app = dash.Dash(__name__)
 # AWS Elastic Beanstalk looks for application by default,
@@ -238,20 +237,20 @@ typography_section = html.Div(
                     className='column',
                     children=[
                         html.H2(
-                            'Header (h2)',
+                            'Header (is-2)',
                             className='title is-2',
                         ),
-                        html.H4(
-                            'Subtitle, two levels smaller (h4), is spaced more closely to title. 👍',
+                        html.H3(
+                            'Subtitle (is-4) is spaced more closely to title. 👍',
                             className='subtitle is-4'
                         ),
                         html.Br(),
                         html.H3(
-                            'Header (h3)',
+                            'Header (is-3)',
                             className='title is-3'
                         ),
-                        html.H5(
-                            'Subtitle, again two levels smaller (h5).  Better spacing!',
+                        html.H4(
+                            'Subtitle (is-5).  Better spacing!',
                             className='subtitle is-5'
                         ),
                         html.H3(
