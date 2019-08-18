@@ -115,7 +115,7 @@ checkboxes = dcc.Checklist(
         {"label": " Montréal ", "value": "MTL"},
         {"label": " San Francisco ", "value": "SF"},
     ],
-    values=["MTL", "SF"],
+    value=["MTL", "SF"],
 )
 checkboxes_field = html.Div(
     className="field", children=[html.Label("Checklist", className="label"), checkboxes]
