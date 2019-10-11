@@ -1,5 +1,12 @@
 # Dash tempate for SNAP tools
 
+## Structure
+
+ * `application.py` contains the main app loop code.
+ * `gui.py` has most user interface elements.
+ * `luts.py` has shared code & lookup tables and other configuration.
+ * `assets/` has images and CSS (uses [Bulma](https://bulma.io))
+
 ## Local development
 
 After cloning this template, run it this way:
@@ -24,3 +31,7 @@ eb init
 eb deploy
 ```
 
+The following env vars must be set:
+
+ * `REQUESTS_PATHNAME_PREFIX` - URL fragment so requests are properly routed.
+ * `GTAG_ID` - Google Tag Manager ID
