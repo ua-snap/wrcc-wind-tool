@@ -31,7 +31,6 @@ eb init
 eb deploy
 ```
 
-The following env vars must be set:
+The following env vars need be set:
 
- * `REQUESTS_PATHNAME_PREFIX` - URL fragment so requests are properly routed.
  * `GTAG_ID` - Google Tag Manager ID
