@@ -31,6 +31,6 @@ eb init
 eb deploy
 ```
 
-The following env vars need be set:
+The following env vars need to be set:
 
  * `GTAG_ID` - Google Tag Manager ID

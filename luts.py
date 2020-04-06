@@ -1,4 +1,3 @@
-
 """
 Common shared text strings and lookup tables.
 """
