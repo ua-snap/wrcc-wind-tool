@@ -9,7 +9,54 @@ h1, h2, h3, h4, h5, h6 {
 	font-family: 'Open Sans';
 }
 
+.button {
+    font-family: 'Open Sans';
+}
+
+.content {
+	margin: 0 auto;
+	max-width: 40em;
+}
+
+nav .navbar-brand img {
+	max-height: 3rem;
+	height: 3rem;
+}
 /* We want vertical Checklists always. */
 .control label.checkbox {
 	display: block;
+}
+
+.footer {
+    box-shadow: inset 0 7px 9px -7px rgba(0,0,0,0.4);
+    font-family: "Open Sans";
+}
+
+.footer div.wrapper {
+	margin: 2rem auto;
+	display: flex;
+	height: 8rem;
+	max-height: 8rem;
+}
+
+
+.footer img {
+	min-width: 12.5vw;
+	max-width: 150px;
+	padding: 0 1rem;
+	display: block;
+	position: relative;
+	top: .25rem;
+	object-fit: contain;
+    align-self: flex-start;
+}
+
+.footer p {
+	text-align: left;
+	font-size: 0.95rem;
+	margin: 0 1rem 1rem;
+}
+
+.footer div.wrapped {
+	flex: 1 1 auto;
 }

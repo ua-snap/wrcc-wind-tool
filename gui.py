@@ -1,10 +1,74 @@
-import dash
+import os
+from datetime import datetime
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_dangerously_set_inner_html as ddsih
+
+# For hosting
+path_prefix = os.getenv("REQUESTS_PATHNAME_PREFIX") or "/"
+
+# Change the feedback tool name to create a new Feedback URL for this app
+# before launching into production.
+feedback_toolname = "CHANGE ME"
+
+# Helper function
+def wrap_in_section(content, section_classes="", container_classes="", div_classes=""):
+    """
+    Helper function to wrap sections.
+    Accepts an array of children which will be assigned within
+    this structure:
+    <section class="section">
+        <div class="container">
+            <div>[children]...
+    """
+    return html.Section(
+        className="section " + section_classes,
+        children=[
+            html.Div(
+                className="container " + container_classes,
+                children=[html.Div(className=div_classes, children=content)],
+            )
+        ],
+    )
+
 
 button_primary = html.Button("Primary", className="button")
 button_warning = html.Button("Primary", className="button is-warning")
 button_loading = html.Button("Primary", className="button is-info is-loading")
+
+header = ddsih.DangerouslySetInnerHTML(
+    f"""
+<div class="container">
+<nav class="navbar" role="navigation" aria-label="main navigation">
+
+  <div class="navbar-brand">
+    <a class="navbar-item" href="https://uaf-snap.org">
+      <img src="{path_prefix}assets/SNAP_acronym_color.svg">
+    </a>
+
+    <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+
+  <div class="navbar-menu">
+
+    <div class="navbar-end">
+      <div class="navbar-item">
+        <div class="buttons">
+          <a href="https://uaf-iarc.typeform.com/to/mN7J5cCK#tool={feedback_toolname}" class="button is-link" target="_blank">
+            Feedback
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+</div>
+"""
+)
 
 buttons_field = html.Div(
     className="field",
@@ -163,55 +227,6 @@ form_elements_section = html.Div(
     ],
 )
 
-navbar = html.Div(
-    className="navbar",
-    role="navigation",
-    children=[
-        html.Div(
-            className="navbar-brand",
-            children=[
-                html.A(
-                    className="navbar-item",
-                    href="#",
-                    children=[html.Img(src="assets/SNAP_acronym_color.svg")],
-                )
-            ],
-        ),
-        html.Div(
-            className="navbar-menu",
-            children=[
-                html.Div(
-                    className="navbar-start",
-                    children=[
-                        html.A("Home", className="navbar-item"),
-                        html.A("About", className="navbar-item"),
-                        html.P("Navbar text", className="navbar-item"),
-                    ],
-                ),
-                html.Div(
-                    className="navbar-end",
-                    children=[
-                        html.Div(
-                            className="navbar-item",
-                            children=[
-                                html.Div(
-                                    className="buttons",
-                                    children=[
-                                        html.A(
-                                            "Sign up", className="button is-primary"
-                                        ),
-                                        html.A("Log in", className="button is-light"),
-                                    ],
-                                )
-                            ],
-                        )
-                    ],
-                ),
-            ],
-        ),
-    ],
-)
-
 typography_section = html.Div(
     className="section",
     children=[
@@ -277,23 +292,30 @@ Espresso sharp iconic consectetur wardrobe, charming delightful ut eiusmod Comme
     ],
 )
 
+# Used in copyright date
+current_year = datetime.now().year
+
 footer = html.Footer(
     className="footer",
     children=[
-        html.Div(
-            className="content has-text-centered",
-            children=[
-                dcc.Markdown(
-                    """
-This is a page footer, where we'd put legal notes and other items.
-                    """
-                )
-            ],
-        )
+        ddsih.DangerouslySetInnerHTML(
+            f"""
+<div class="container">
+    <div class="wrapper is-size-6">
+        <img src="{path_prefix}assets/UAF.svg"/>
+        <div class="wrapped">
+            <p>The [TOOLNAME] was developed by [ACKNOWLEDGE PIs] from data provided by [SERVICE DATA WAS COLLECTED FROM]. This website was developed by the <a href="https://uaf-snap.org/">Scenarios Network for Alaska and Arctic Planning (SNAP)</a>, research groups at the <a href="https://uaf-iarc.org/">International Arctic Research Center (IARC)</a> at the <a href="https://uaf.edu/uaf/">University of Alaska Fairbanks (UAF)</a>.</p>
+            <p>Copyright &copy; {current_year} University of Alaska Fairbanks.  All rights reserved.</p>
+            <p>UA is an AA/EO employer and educational institution and prohibits illegal discrimination against any individual.  <a href="https://www.alaska.edu/nondiscrimination/">Statement of Nondiscrimination</a></p>
+        </div>
+    </div>
+</div>
+            """
+        ),
     ],
 )
 
 layout = html.Div(
     className="container",
-    children=[navbar, typography_section, html.Hr(), form_elements_section, footer],
+    children=[header, typography_section, html.Hr(), form_elements_section, footer],
 )
