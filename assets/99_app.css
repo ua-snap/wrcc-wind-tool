@@ -60,3 +60,139 @@ nav .navbar-brand img {
 .footer div.wrapped {
 	flex: 1 1 auto;
 }
+
+
+/* Tweaks to Bulma / Plotly control/form elements */
+/* Slightly boost font size for body text. */
+.is-size-6 {
+    font-size: 1.2rem!important;
+}
+a {
+    color: #0570b0;
+}
+/* Styling the dropdown selectors */
+.dropdown-selector {
+    width: 20em;
+}
+div.Select-control {
+    border: 1px solid #888;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}
+.section + .section {
+    border-top: 1px solid #eee;
+}
+/* Fix up horizontal radio buttons, they're janky */
+.field .control label {
+    margin-right: 1rem;
+}
+.field .control input[type="radio"] {
+    position: relative;
+    bottom: 2px;
+    right: 5px;
+}
+
+
+/* Header & intro styles */
+.header {
+    background-color: #DDE4F2;
+    padding: 0;
+}
+.header--section {
+    margin-top: -1rem;
+}
+.header--section h1 {
+    padding-top: .8rem;
+}
+.header--logo {
+    float: left;
+    padding-right: 2rem;
+}
+.header--snap-link a {
+    height: 5.4em;
+    display: block;
+    z-index: 1000;
+}
+.header--snap-link img {
+    height: 5.4em;
+}
+.section.survey-link a.button {
+    font-weight: 700;
+}
+.camera-icon {
+    padding-bottom: 2rem;
+}
+.camera-icon span {
+    display: inline-block;
+    position: relative;
+    top: 0.25rem;
+    padding: 0 3px;
+}
+.camera-icon span path {
+    fill: #ccc;
+}
+
+/* Chart layout/padding styles.
+Block out height/width for all charts to reduce "bounce"
+when the page is loading.
+*/
+.section.charts {
+    padding-top: 0;
+}
+#map {
+    max-width: 500px;
+    height: 400px;
+}
+#exceedance_plot {
+    max-width: 700px;
+    height: 500px;
+}
+#rose {
+    max-width: 970px;
+    height: 700px;
+}
+#rose_sxs {
+    max-width: 970px;
+    height: 1500px;
+}
+#threshold_graph {
+    max-width: 970px;
+    height: 400px;
+}
+#future_delta_percentiles {
+    max-width: 970px;
+    height: 600px;
+}
+#future_rose {
+    max-width: 970px;
+    height: 550px;
+}
+
+/*
+Style some SVG elements within Plotly to hide things we don't want.
+Not entirely sure why, but need to hide this SVG to prevent
+unwanted background from being shown behind the
+wind roses in Plotly.
+*/
+g.bglayer {
+    display: none !important;
+}
+/*
+Hide 'Aa' from legends in bubble plot.
+https://github.com/plotly/plotly.js/issues/2967#
+*/
+g.pointtext {
+    display: none;
+}
+
+/* Footer! */
+.footer p {
+    width: 50%;
+    margin: 1em auto;
+}
+.footer a {
+    display: inline-block;
+}
+.footer a img {
+    height: 5em;
+    margin: 1em 1.5em;
+}
