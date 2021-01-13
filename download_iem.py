@@ -12,7 +12,6 @@ from pathlib import Path
 BASE_URI = "http://mesonet.agron.iastate.edu/"
 
 
-
 def get_stations(network):
     """Build a station list from a network
 
@@ -42,8 +41,13 @@ def make_uris(sids, start, end):
         a list of URIs, one for each dataset
     """
     service = BASE_URI + "cgi-bin/request/asos.py?"
-    # speed (mph) and direction, comma-separated (no debug header) no latlot or elev
-    service += "data=sped&data=drct&tz=Etc/UTC&format=onlycomma&latlon=no&elev=no&"
+    # speed (mph), direction, and gust
+    service += "data=sped&data=drct&data=gust_mph&"
+    # comma-separated (no debug header) no latlot or elev
+    service += "&tz=Etc/UTC&format=onlycomma&latlon=no&elev=no&"
+    # get the hourly "routine + SPECals" (report type 2)
+    # report type 1 is MADIS HFMETAR
+    service += "report_type=2&"
     # add start and ending dates
     start, end = start.split("-"), end.split("-")
     service += f"year1={start[0]}&month1={start[1]}&day1={start[2]}&"
@@ -141,7 +145,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     network = "AK_ASOS"
-    start, end = "1980-01-01", "2019-12-31"
+    start, end = "1980-01-01", "2020-01-01"
 
     out_fps = run_download(network, start, end, out_dir)
 
