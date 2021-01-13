@@ -1,6 +1,7 @@
 """Download hisotorical wind data from SNAP CKAN"""
 
-import os, subprocess
+import subprocess
+from pathlib import Path
 
 
 if __name__ == '__main__':
@@ -9,4 +10,6 @@ if __name__ == '__main__':
     out = subprocess.check_output(["wget", "-qO-", ckan_dir])
     uris = ["http://data.snap.uaf.edu/" + x.split("\\'>")[0] for x in str(out).split("href=\\\'") if ".csv" in x]
     # download to data dir
-    _ = [subprocess.Popen(["wget", uri, "-q", "-P", "data"]) for uri in uris]
+    asos_dir = Path.cwd().joinpath("data/asos")
+    asos_dir.mkdir(parents=True, exist_ok=True)
+    _ = [subprocess.Popen(["wget", uri, "-q", "-P", asos_dir]) for uri in uris]
