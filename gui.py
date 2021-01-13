@@ -1,8 +1,11 @@
 import os
-from datetime import datetime
+import luts
+import plotly.graph_objs as go
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_dangerously_set_inner_html as ddsih
+from datetime import datetime
+
 
 # For hosting
 path_prefix = os.getenv("REQUESTS_PATHNAME_PREFIX") or "/"
@@ -10,6 +13,8 @@ path_prefix = os.getenv("REQUESTS_PATHNAME_PREFIX") or "/"
 # Change the feedback tool name to create a new Feedback URL for this app
 # before launching into production.
 feedback_toolname = "CHANGE ME"
+
+map_figure = go.Figure(data=luts.map_communities_trace, layout=luts.map_layout)
 
 # Helper function
 def wrap_in_section(content, section_classes="", container_classes="", div_classes=""):
@@ -32,297 +37,292 @@ def wrap_in_section(content, section_classes="", container_classes="", div_class
     )
 
 
-button_primary = html.Button("Primary", className="button")
-button_warning = html.Button("Primary", className="button is-warning")
-button_loading = html.Button("Primary", className="button is-info is-loading")
-
-header = ddsih.DangerouslySetInnerHTML(
-    f"""
-<div class="container">
-<nav class="navbar" role="navigation" aria-label="main navigation">
-
-  <div class="navbar-brand">
-    <a class="navbar-item" href="https://uaf-snap.org">
-      <img src="{path_prefix}assets/SNAP_acronym_color.svg">
-    </a>
-
-    <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-    </a>
-  </div>
-
-  <div class="navbar-menu">
-
-    <div class="navbar-end">
-      <div class="navbar-item">
-        <div class="buttons">
-          <a href="https://uaf-iarc.typeform.com/to/mN7J5cCK#tool={feedback_toolname}" class="button is-link" target="_blank">
-            Feedback
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</nav>
-</div>
-"""
-)
-
-buttons_field = html.Div(
-    className="field",
+header = html.Div(
+    className="header",
     children=[
-        html.Label("Buttons", className="label"),
         html.Div(
-            className="buttons control",
-            children=[button_primary, button_loading, button_warning],
+            className="container",
+            children=[
+                html.Div(
+                    className="section header--section",
+                    children=[
+                        html.Div(
+                            className="header--titles",
+                            children=[
+                                html.H1(
+                                    "WRCC Alaska Aviation Wind Tool", className="title is-3"
+                                ),
+                                html.H2(
+                                    "Explore aviation-relevant wind data for Alaska airports",
+                                    className="subtitle is-5",
+                                ),
+                            ],
+                        ),
+                    ],
+                )
+            ],
+        )
+    ],
+)
+
+intro = wrap_in_section(
+    html.Div(
+        # className="section",
+        children=[
+            html.Div(
+                className="container",
+                children=[
+                    html.Div(
+                        className="survey-link",
+                        children=[
+                            html.P(
+                                "This tool displays recorded hourly wind data 1980-2015 for 67 Alaska communities.",
+                                className="content is-size-4",
+                            ),
+                            html.A(
+                                "Let us know how we can make this tool better",
+                                className="button is-link is-medium",
+                                rel="external",
+                                target="_blank",
+                                # href="https://uaf-iarc.typeform.com/to/hOnb5h",
+                                href="replace with typeform link"
+                            ),
+                        ],
+                    )
+                ],
+            )
+        ],
+    )
+)
+
+communities_dropdown_field = html.Div(
+    className="field dropdown-selector",
+    children=[
+        html.Label("Choose a location", className="label"),
+        html.Div(
+            className="control",
+            children=[
+                dcc.Dropdown(
+                    id="communities-dropdown",
+                    options=[
+                        {"label": community.place, "value": index}
+                        for index, community in luts.communities.iterrows()
+                    ],
+                    value="PAFA",
+                )
+            ],
         ),
+    ],
+)
+
+form_fields = html.Div(
+    className="selectors form",
+    children=[
         dcc.Markdown(
-            "You can see more info on different button styles and classes [here](http://www.somewhere.com)",
-            className="help",
-        ),
-    ],
-)
-
-dropdown = dcc.Dropdown(
-    options=[
-        {"label": "New York City", "value": "NYC"},
-        {"label": "Montréal", "value": "MTL"},
-        {"label": "San Francisco", "value": "SF"},
-    ],
-    value="MTL",
-)
-dropdown_field = html.Div(
-    className="field",
-    children=[
-        html.Label("Dropdown", className="label"),
-        html.Div(className="control", children=[dropdown]),
-    ],
-)
-
-multi_dropdown = dcc.Dropdown(
-    options=[
-        {"label": "New York City", "value": "NYC"},
-        {"label": "Montréal", "value": "MTL"},
-        {"label": "San Francisco", "value": "SF"},
-    ],
-    multi=True,
-    value="MTL",
-)
-
-multi_dropdown_field = html.Div(
-    className="field",
-    children=[
-        html.Label("Multi-dropdown", className="label"),
-        html.Div(className="control", children=[multi_dropdown]),
-    ],
-)
-
-slider = dcc.Slider(min=-5, max=10, step=0.5, value=-3)
-slider_field = html.Div(
-    className="field",
-    children=[
-        html.Label("Slider", className="label"),
-        html.Div(className="control", children=[slider]),
-    ],
-)
-
-range_slider = dcc.RangeSlider(count=1, min=-5, max=10, step=0.5, value=[-3, 7])
-range_slider_field = html.Div(
-    className="field",
-    children=[
-        html.Label("Range Slider", className="label"),
-        html.Div(className="control", children=[range_slider]),
-    ],
-)
-
-marked_slider = dcc.Slider(
-    min=2000,
-    max=2090,
-    step=10,
-    marks={2000: "2000\u2019s", 2050: "2050\u2019s", 2090: "2090\u2019s"},
-    value=2030,
-)
-marked_slider_field = html.Div(
-    className="field",
-    children=[
-        html.Label("Marked Slider", className="label"),
-        html.Div(className="control", children=[marked_slider]),
-        html.Br(),
-        html.P(
             """
-            It's possible that the range marker labels will leak outside of the margins of the column, but they're still centered nicely.  Reduce the width of the slider if needed to keep spacing consistent.
-            """,
-            className="help",
+            Explore past wind data from 67 communities across Alaska. Start by choosing a specific community.
+""",
+            className="content is-size-5",
+        ),
+        ddsih.DangerouslySetInnerHTML(
+            """
+<p class="content is-size-5 camera-icon">Click the <span>
+<svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m500 450c-83 0-150-67-150-150 0-83 67-150 150-150 83 0 150 67 150 150 0 83-67 150-150 150z m400 150h-120c-16 0-34 13-39 29l-31 93c-6 15-23 28-40 28h-340c-16 0-34-13-39-28l-31-94c-6-15-23-28-40-28h-120c-55 0-100-45-100-100v-450c0-55 45-100 100-100h800c55 0 100 45 100 100v450c0 55-45 100-100 100z m-400-550c-138 0-250 112-250 250 0 138 112 250 250 250 138 0 250-112 250-250 0-138-112-250-250-250z m365 380c-19 0-35 16-35 35 0 19 16 35 35 35 19 0 35-16 35-35 0-19-16-35-35-35z" transform="matrix(1 0 0 -1 0 850)"></path></svg>
+</span> icon in the upper&ndash;right of each chart to download it.</p>
+            """
+        ),
+        communities_dropdown_field,
+        dcc.Graph(
+            id="map",
+            figure=map_figure,
+            config={"displayModeBar": False, "scrollZoom": False},
         ),
     ],
 )
 
-checkboxes = dcc.Checklist(
-    labelClassName="checkbox",
-    className="control",
-    options=[
-        {"label": " New York City ", "value": "NYC"},
-        {"label": " Montréal ", "value": "MTL"},
-        {"label": " San Francisco ", "value": "SF"},
+# form_elements_section = wrap_in_section(
+#     html.Div(
+#         children=[
+#             html.H2("Common form elements", className="title is-2"),
+#             html.H4(
+#                 "These examples can be copy/pasted where appropriate.",
+#                 className="subtitle is-4",
+#             ),
+#             html.Div(
+#                 className="columns",
+#                 children=[
+#                     html.Div(
+#                         className="column",
+#                         children=[
+#                             html.Div(
+#                                 children=[
+#                                     # html.Div(
+#                                     #     className="section",
+#                                     #     children=[html.A(id="toc_location"), form_fields],
+#                                     # ),
+#                                     html.Div(
+#                                         className="section",
+#                                         children=[
+#                                             # html.A(id="toc_g2"),
+#                                             html.H3(
+#                                                 "Annual wind speed/direction",
+#                                                 className="title is-4 title--rose",
+#                                             ),
+#                                             dcc.Markdown(
+#                                                 """
+#     This wind rose shows prevailing wind direction and speed for a given location. Data show annual trends averaged over 35 years of observations (1980&ndash;2014).
+
+#      * **Spokes** in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).
+#      * **Colors** within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.
+#      * **Size of the center** hole indicates the &percnt; of calm winds.
+#          """,
+#                                                 className="content is-size-6",
+#                                             ),
+#                                             dcc.Graph(
+#                                                 id="rose",
+#                                                 figure=go.Figure(),
+#                                                 config=luts.fig_configs,
+#                                             ),
+#                                         ],
+#                                     ),
+#                                 ]
+#                             )
+#                         ]
+#                     ),
+#                 ],
+#             ),
+#         ],
+#     )
+# )
+
+help_text = html.Div(
+    className="section",
+    children=[
+        html.A(id="toc_about"),
+        html.Div(
+            className="section",
+            children=[
+                dcc.Markdown(
+                    """
+
+### About wind observation data
+
+ * Wind speed observations source: [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu/request/download.phtml?network=AK_ASOS), run by Iowa State University. Houses data collected by the [Automated Surface Observing System](https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-surface-observing-system-asos) network and the [Automated Weather Observing System](https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-weather-observing-system-awos).
+ * Measurement frequency: Varies between locations, from every 5 minutes to every 3 hours. Winds were measured hourly in most cases; speeds were averaged to the nearest hour in cases where measurements were more frequent.
+ * Observing site criteria: We use data from 67 observing sites located across Alaska, mostly at airports (see map). For inclusion here, a station must have made 4 or more hourly wind measurements on at least 75&percnt; of the days during the period 1980&ndash;2014.
+
+##### Data processing and quality control
+
+ * Data were adjusted for homogeneity because some instrument heights (now 10 m) and/or precise locations have changed since 1980.
+ * Wind speeds at 28 stations showed a statistically significant change from one part of the record to the next. Therefore we adjusted the data prior to the change using quantile mapping, a typical method for correcting biased meteorological data.
+ * Four stations displayed two discontinuities. For these, we applied the quantile mapping adjustments to the later period.
+ * We also removed obviously wrong reports (e.g., wind speeds exceeding 100 mph) and short-duration (< 6 hour) spikes in which an hourly wind speed was at least 30 mph greater than in the immediately preceding and subsequent hours.
+
+                """,
+                    className="is-size-6 content",
+                )
+            ],
+        ),
     ],
-    value=["MTL", "SF"],
-)
-checkboxes_field = html.Div(
-    className="field", children=[html.Label("Checklist", className="label"), checkboxes]
 )
 
-radios = dcc.RadioItems(
-    labelClassName="radio",
-    className="control",
-    options=[
-        {"label": " New York City ", "value": "NYC"},
-        {"label": " Montréal ", "value": "MTL"},
-        {"label": " San Francisco ", "value": "SF"},
-    ],
-    value="MTL",
-)
-radios_field = html.Div(
-    className="field", children=[html.Label("RadioItems", className="label"), radios]
-)
 
-form_elements_section = wrap_in_section(
+
+
+columns = wrap_in_section(
     html.Div(
+        # className="section charts",
         children=[
-            html.H2("Common form elements", className="title is-2"),
-            html.H4(
-                "These examples can be copy/pasted where appropriate.",
-                className="subtitle is-4",
-            ),
             html.Div(
                 className="columns",
                 children=[
+                    # html.Div(className="column is-one-fifth", children=[toc]),
                     html.Div(
                         className="column",
                         children=[
-                            buttons_field,
-                            html.Br(),
-                            dropdown_field,
-                            html.Br(),
-                            multi_dropdown_field,
-                        ],
-                    ),
-                    html.Div(
-                        className="column",
-                        children=[
-                            slider_field,
-                            html.Br(),
-                            range_slider_field,
-                            html.Br(),
-                            marked_slider_field,
-                        ],
-                    ),
-                    html.Div(
-                        className="column",
-                        children=[checkboxes_field, html.Br(), radios_field],
-                    ),
-                ],
-            ),
-        ],
-    )
-)
+                            html.Div(
+                                children=[
+                                    html.Div(
+                                        className="section",
+                                        children=[html.A(id="toc_location"), form_fields],
+                                    ),
+                                    html.Div(
+                                        className="section",
+                                        children=[
+                                            html.A(id="toc_g2"),
+                                            # maybe reorganize?
+                                            html.H3(
+                                                "Crosswind component calculation",
+                                                className="title is-4 title--rose",
+                                            ),
+                                            dcc.Graph(
+                                                id="exceedance_plot",
+                                                figure=go.Figure(),
+                                                config=luts.fig_configs,
+                                            ),
+                                            html.H3(
+                                                "Historical wind speed/direction comparison",
+                                                className="title is-4 title--rose",
+                                            ),
+                                            dcc.Markdown(
+                                                """
+    These wind roses show prevailing wind direction and speed for a given location, for two historical time periods. Data show trends averaged over 10 years of observations (1980&ndash;2014).
 
-typography_section = wrap_in_section(
-    html.Div(
-        children=[
-            html.H1("Typography", className="title is-1"),
-            html.H3("Titles, text, and basic typography.", className="subtitle is-3"),
-            html.Hr(),
-            html.Div(
-                className="columns",
-                children=[
-                    html.Div(
-                        className="column",
-                        children=[
-                            html.H2("Header (is-2)", className="title is-2"),
-                            html.H3(
-                                "Subtitle (is-4) is spaced more closely to title. 👍",
-                                className="subtitle is-4",
+     * **Spokes** in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).
+     * **Colors** within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.
+     * **Size of the center** hole indicates the &percnt; of calm winds.
+         """,
+                                                className="content is-size-6",
+                                            ),
+                                            dcc.Graph(
+                                                id="rose_sxs",
+                                                figure=go.Figure(),
+                                                config=luts.fig_configs,
+                                            ),
+                                        ],
+                                    ),
+                                    html.Hr(),
+                                ]
                             ),
-                            html.Br(),
-                            html.H3("Header (is-3)", className="title is-3"),
-                            html.H4(
-                                "Subtitle (is-5).  Better spacing!",
-                                className="subtitle is-5",
-                            ),
-                            html.H3(
-                                "General Subheader (h3)", className="subtitle is-3"
-                            ),
-                            html.H4(
-                                "General Subheader (h4)", className="subtitle is-4"
-                            ),
-                            html.H5(
-                                "General Subheader (h5)", className="subtitle is-5"
-                            ),
-                        ],
-                    ),
-                    html.Div(
-                        className="column",
-                        children=[
-                            dcc.Markdown(
-                                """
-*Paragraph text*, `is-size-4`.  **Boutique eclectic** Asia-Pacific efficient charming airport liveable the highest quality Ginza [Winkreative impeccable](https://www.winkreative.com/) hub Lufthansa.
-
-* Nordic hub remarkable
-* Boeing 787 bulletin
-* Washlet sophisticated
-
-Espresso cosy iconic charming Singapore craftsmanship. Porter airport Boeing 787 Washlet bespoke Nordic K-pop intricate Ginza. Singapore liveable sharp smart bespoke finest conversation Gaggenau Asia-Pacific.
-                            """,
-                                className="is-size-4 content",
-                            ),
-                            html.Br(),
-                            dcc.Markdown(
-                                """
-*Paragraph text*, `is-size-6`.  **Sharp craftsmanship** sleepy, bureaux intricate cosy [Lufthansa Scandinavian exquisite](https://liveandletsfly.boardingarea.com/2018/06/28/lufthansa-first-class-houston/).
-
-
-* Flat white perfect,
-* Culpa handsome tote bag,
-* Occaecat Scandinavian Shinkansen,
-
-
-Espresso sharp iconic consectetur wardrobe, charming delightful ut eiusmod Comme des Garçons nisi conversation exercitation laboris Muji. Intricate finest dolor, Baggu liveable dolore id Melbourne Fast Lane Singapore. Lufthansa ut Shinkansen liveable.
-""",
-                                className="is-size-6 content",
-                            ),
+                            help_text,
                         ],
                     ),
                 ],
-            ),
+            )
         ],
-    )
+    ), 
+    "charts"
 )
 
-# Used in copyright date
-current_year = datetime.now().year
 
 footer = html.Footer(
-    className="footer",
+    className="footer has-text-centered",
     children=[
-        ddsih.DangerouslySetInnerHTML(
-            f"""
-<div class="container">
-    <div class="wrapper is-size-6">
-        <img src="{path_prefix}assets/UAF.svg"/>
-        <div class="wrapped">
-            <p>The [TOOLNAME] was developed by [ACKNOWLEDGE PIs] from data provided by [SERVICE DATA WAS COLLECTED FROM]. This website was developed by the <a href="https://uaf-snap.org/">Scenarios Network for Alaska and Arctic Planning (SNAP)</a>, research groups at the <a href="https://uaf-iarc.org/">International Arctic Research Center (IARC)</a> at the <a href="https://uaf.edu/uaf/">University of Alaska Fairbanks (UAF)</a>.</p>
-            <p>Copyright &copy; {current_year} University of Alaska Fairbanks.  All rights reserved.</p>
-            <p>UA is an AA/EO employer and educational institution and prohibits illegal discrimination against any individual.  <a href="https://www.alaska.edu/nondiscrimination/">Statement of Nondiscrimination</a></p>
-        </div>
-    </div>
-</div>
+        html.Div(
+            children=[
+                html.A(
+                    href="https://snap.uaf.edu",
+                    target="_blank",
+                    className="level-item",
+                    children=[html.Img(src=path_prefix + "assets/SNAP_color_all.svg")],
+                ),
+                html.A(
+                    href="https://uaf.edu/uaf/",
+                    target="_blank",
+                    className="level-item",
+                    children=[html.Img(src=path_prefix + "assets/UAF.svg")],
+                ),
+            ]
+        ),
+        dcc.Markdown(
             """
+UA is an AA/EO employer and educational institution and prohibits illegal discrimination against any individual. [Statement of Nondiscrimination](https://www.alaska.edu/nondiscrimination/)
+            """,
+            className="content is-size-6",
         ),
     ],
 )
 
 layout = html.Div(
-    children=[header, typography_section, html.Hr(), form_elements_section, footer],
+    children=[header, intro, html.Hr(), columns, footer],
 )

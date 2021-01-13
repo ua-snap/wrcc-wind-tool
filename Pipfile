@@ -10,6 +10,10 @@ dash-html-components = "*"
 dash-core-components = "*"
 plotly = "*"
 dash_dangerously_set_inner_html = "*"
+pandas = "*"
+dask = {extras = ["dataframe"],version = "*"}
+ipykernel = "*"
+requests = "*"
 
 [dev-packages]
 flask = "*"
