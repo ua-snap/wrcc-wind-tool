@@ -1,4 +1,6 @@
-# Dash tempate for SNAP tools
+# WRCC Wind Tool
+
+Active development!
 
 ## Structure
 
@@ -9,7 +11,7 @@
 
 ## Local development
 
-After cloning this template, run it this way:
+Run via 
 
 ```
 pipenv install
