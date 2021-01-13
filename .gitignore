@@ -5,3 +5,6 @@
 !.elasticbeanstalk/*.global.yml
 .idea/*
 __pycache__/*
+
+# raw data
+data/*
