@@ -1,68 +1,130 @@
-"""
-Common shared text strings and lookup tables.
-"""
+# pylint: disable=invalid-name, import-error
+"""Contains common lookup tables between GUI/application code"""
 
 import os
+import pandas as pd
+import numpy as np
+import plotly.graph_objs as go
 
-title = "SNAP Dash app"
-url = "http://snap.uaf.edu/tools/demo"
-preview = "http://snap.uaf.edu/tools/demo/assets/preview.png"
-description = "SNAP Dash app demo template"
+communities = pd.read_csv("places.csv", index_col="sid")
 
-# Customize this layout to include Google Analytics
-gtag_id = os.getenv("GTAG_ID", default="")
-index_string = f"""
-<!DOCTYPE html>
-<html>
-    <head>
-        <!-- Global site tag (gtag.js) - Google Analytics -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id={gtag_id}"></script>
-        <script>
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){{dataLayer.push(arguments);}}
-          gtag('js', new Date());
+# Needs to be a numpy array for ease of building relevant
+# strings for some code
+# 50, 75, 85, 95, 99
+percentiles = np.array(
+    [
+        "mph (50th %ile) <b>Common<b>",
+        "mph (75th %ile)",
+        "mph (85th %ile) <b>Occasional</b>",
+        "mph (95th %ile)",
+        "mph (99th %ile) <b>Rare</b>",
+    ]
+)
 
-          gtag('config', '{gtag_id}');
-        </script>
-        {{%metas%}}
-        <title>{{%title%}}</title>
-        <meta charset="utf-8"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+durations = {
+    1: "1 continuous hour or more",
+    6: "6+ hours",
+    12: "12+ hours",
+    24: "24+ hours",
+    48: "48+ hours",
+}
 
-        <!-- Schema.org markup for Google+ -->
-        <meta itemprop="name" content="{title}">
-        <meta itemprop="description" content="{description}">
-        <meta itemprop="image" content="{preview}">
+gcms = {"CCSM4": "NCAR-CCSM4", "CM3": "GFDL-CM3"}
 
-        <!-- Twitter Card data -->
-        <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:site" content="@SNAPandACCAP">
-        <meta name="twitter:title" content="{title}">
-        <meta name="twitter:description" content="{description}">
-        <meta name="twitter:creator" content="@SNAPandACCAP">
-        <!-- Twitter summary card with large image must be at least 280x150px -->
-        <meta name="twitter:image:src" content="{preview}">
+months = {
+    1: "January",
+    2: "February",
+    3: "March",
+    4: "April",
+    5: "May",
+    6: "June",
+    7: "July",
+    8: "August",
+    9: "September",
+    10: "October",
+    11: "November",
+    12: "December",
+}
 
-        <!-- Open Graph data -->
-        <meta property="og:title" content="{title}" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="{url}" />
-        <meta property="og:image" content="{preview}" />
-        <meta property="og:description" content="{description}" />
-        <meta property="og:site_name" content="{title}" />
+decades = {
+    1980: "1980-1989",
+    1990: "1990-1999",
+    2000: "2000-2009",
+    2010: "2010-2019",
+}
 
-        <link rel="alternate" hreflang="en" href="{url}" />
-        <link rel="canonical" href="{url}"/>
-        {{%favicon%}}
-        {{%css%}}
-    </head>
-    <body>
-        {{%app_entry%}}
-        <footer>
-            {{%config%}}
-            {{%scripts%}}
-            {{%renderer%}}
-        </footer>
-    </body>
-</html>
-"""
+# For decadal selector, we need a subset of the above!
+decade_selections = {
+    2020: "2020-2039",
+    2040: "2040-2059",
+    2060: "2060-2079",
+    2080: "2080-2099",
+}
+
+# Map of quantiles to bubble pixel size
+bubble_bins = {"least": 10, "some": 20, "middle": 35, "more": 55, "most": 80}
+
+# This trace is shared so we can highlight specific communities.
+map_communities_trace = go.Scattermapbox(
+    lat=communities.loc[:, "latitude"],
+    lon=communities.loc[:, "longitude"],
+    mode="markers",
+    marker={"size": 10, "color": "rgb(80,80,80)"},
+    line={"color": "rgb(0, 0, 0)", "width": 2},
+    text=communities.place,
+    hoverinfo="text",
+)
+
+map_layout = go.Layout(
+    autosize=True,
+    hovermode="closest",
+    mapbox=dict(style="carto-positron", zoom=2.5, center=dict(lat=63, lon=-158)),
+    showlegend=False,
+    margin=dict(l=0, r=0, t=0, b=0),
+)
+
+
+# Common configuration for graph figures
+fig_download_configs = dict(filename="winds", width="1280", scale=2)
+fig_configs = dict(
+    displayModeBar=True,
+    showSendToCloud=False,
+    toImageButtonOptions=fig_download_configs,
+    modeBarButtonsToRemove=[
+        "zoom2d",
+        "pan2d",
+        "select2d",
+        "lasso2d",
+        "zoomIn2d",
+        "zoomOut2d",
+        "autoScale2d",
+        "resetScale2d",
+        "hoverClosestCartesian",
+        "hoverCompareCartesian",
+        "hoverClosestPie",
+        "hoverClosest3d",
+        "hoverClosestGl2d",
+        "hoverClosestGeo",
+        "toggleHover",
+        "toggleSpikelines",
+    ],
+    displaylogo=False,
+)
+
+# Gradient-colors, from gentlest to darker/more saturated.
+# Some charts need to access these directly.
+colors = ["#d0d1e6", "#a6bddb", "#74a9cf", "#3690c0", "#0570b0", "#034e7b"]
+
+# The lowest bound excludes actual 0 (calm) readings,
+# this is deliberate.
+speed_ranges = {
+    "0-6": {"range": [0.001, 6], "color": colors[0]},
+    "6-10": {"range": [6, 10], "color": colors[1]},
+    "10-14": {"range": [10, 14], "color": colors[2]},
+    "14-18": {"range": [14, 18], "color": colors[3]},
+    "18-22": {"range": [18, 22], "color": colors[4]},
+    "22+": {
+        "range": [22, 1000],  # let's hope the upper bound is sufficient :-)
+        "color": colors[5],
+    },
+}
