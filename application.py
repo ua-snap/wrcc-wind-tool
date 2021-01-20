@@ -278,7 +278,6 @@ def update_rose_sxs(sid):
     """
     Create side-by-side (sxs) plot of wind roses from different decades
     """
-    station_name = luts.communities.loc[sid]["place"]
     # initialize figure (display blank fig even if insufficient data)
     # t = top margin in % of figure.
     subplot_spec = dict(type="polar", t=0.02)
@@ -311,13 +310,15 @@ def update_rose_sxs(sid):
             tickangle=0,
             range=[0, 5],
             tick0=1,
-            dtick=10,
+            showticklabels=False,
             ticksuffix="%",
             showticksuffix="last",
             showline=False,  # hide the dark axis line
             tickfont=dict(color="#444"),
         ),
     )
+
+    station_name = luts.communities.loc[sid]["place"]
 
     layout = {
         "title": dict(
@@ -347,7 +348,6 @@ def update_rose_sxs(sid):
     if len(available_decades) == 0:
         # return blank plot if insufficient data
         layout["title"]["text"] = ""
-        # layout["polar1"]["radialaxis"]["marker_line_color"] = "#fff"
 
         fig = make_subplots(**subplot_args)
         fig.update_layout(**layout)
@@ -369,15 +369,17 @@ def update_rose_sxs(sid):
             xref="paper",
             yref="paper",
             x=0.5,
-            y=0.5,
+            y=0.6,
             showarrow=False,
+            bgcolor="rgba(211,211,211,0.5)",
+            font={"size": 22},
         )
 
         return fig
 
     else:
         for decade in luts.decades.values():
-            # select oldest decade and most recent decade
+            # select oldest decade and 2010-2019
             subplot_titles = [decade, "2010-2019"]
             data_list = [
                 station_roses.loc[station_roses["decade"] == d] for d in subplot_titles
@@ -386,18 +388,7 @@ def update_rose_sxs(sid):
 
     subplot_args["subplot_titles"] = subplot_titles
     fig = make_subplots(**subplot_args)
-    # t = top margin in % of figure.
-    # subplot_spec = dict(type="polar", t=0.02)
-    # fig = make_subplots(
-    #     rows=1,
-    #     cols=2,
-    #     horizontal_spacing=0.03,
-    #     #vertical_spacing=0.04,
-    #     specs=[[subplot_spec, subplot_spec]],
-    #     subplot_titles=subplot_titles,
-    # )
 
-    month = 1
     max_axes = pd.DataFrame()
     for df, show_legend, i in zip(data_list, [True, False], [1, 2]):
         traces = []
@@ -405,9 +396,6 @@ def update_rose_sxs(sid):
             get_rose_traces(df, traces, show_legend), ignore_index=True
         )
         _ = [fig.add_trace(trace, row=1, col=i) for trace in traces]
-
-    # max_axes = pd.concat([get_rose_traces(df, traces, show_legend) for df, show_legend in zip(data_list, [True, False])])
-    # _ = [fig.add_trace(traces[i], row=1, col=i) for i in np.arange(1, 3)]
 
     # Determine maximum r-axis and r-step.
     # Adding one and using floor(/2.5) was the
@@ -417,6 +405,7 @@ def update_rose_sxs(sid):
     rmax = max_axes.max() + 1
     polar_props["radialaxis"]["range"][1] = rmax
     polar_props["radialaxis"]["dtick"] = math.floor(rmax / 2.5)
+    polar_props["radialaxis"]["showticklabels"] = True
 
     # Apply formatting to subplot titles,
     # which are actually annotations.
@@ -431,6 +420,8 @@ def update_rose_sxs(sid):
     station_calms = calms[calms["sid"] == sid].reset_index()
     station_calms = station_calms.reset_index()
     station_calms = station_calms.assign(percent=station_calms["percent"] / 100)
+    layout["polar1"]["hole"] = station_calms.iloc[0]["percent"]
+    layout["polar2"]["hole"] = station_calms.iloc[1]["percent"]
 
     # Get calms as annotations, then merge
     # them into the subgraph title annotations
@@ -439,26 +430,6 @@ def update_rose_sxs(sid):
     ] + get_rose_calm_sxs_annotations(fig["layout"]["annotations"], station_calms)
 
     fig.update_layout(**layout)
-
-    # fig.update_layout(
-    #     title=dict(
-    #         text="Historical change in winds, " + station_name,
-    #         font=dict(family="Open Sans", size=18),
-    #         x=0.5,
-    #     ),
-    #     margin=dict(l=0, t=100, r=0, b=0),
-    #     font=dict(family="Open Sans", size=10),
-    #     legend=dict(x=0, y=0, orientation="h"),
-    #     height=700,
-    #     paper_bgcolor="#fff",
-    #     plot_bgcolor="#fff",
-    #     # We need to explicitly define the rotations
-    #     # we need for each named subplot.
-    #     # TODO is there a more elegant way to
-    #     # generate this list of things?
-    #     polar1={**polar_props, **{"hole": station_calms.iloc[0]["percent"]}},
-    #     polar2={**polar_props, **{"hole": station_calms.iloc[1]["percent"]}},
-    # )
 
     return fig
 
