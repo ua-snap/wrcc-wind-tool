@@ -53,6 +53,12 @@ decades = {
     2010: "2010-2019",
 }
 
+crosswind_thresholds = {
+    "A-I and B-I": 10.5,
+    "A-II and B-II": 13,
+    "A-III, B-III, C-I through D-III, D-I through D-III": 16
+}
+
 # For decadal selector, we need a subset of the above!
 decade_selections = {
     2020: "2020-2039",

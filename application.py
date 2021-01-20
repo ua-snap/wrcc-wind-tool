@@ -16,9 +16,10 @@ from plotly.subplots import make_subplots
 
 
 # Read data blobs and other items used from env
-data = pd.read_pickle("data/roses.pickle")
+roses = pd.read_pickle("data/roses.pickle")
 calms = pd.read_pickle("data/calms.pickle")
 exceedance = pd.read_pickle("data/crosswind_exceedance.pickle")
+wep_quantiles = pd.read_pickle("data/wep_box_data.pickle")
 # monthly_means = pd.read_csv("monthly_averages.csv")
 # future_rose = pd.read_csv("future_roses.csv")
 # percentiles = pd.read_csv("percentiles.csv", index_col=0)
@@ -142,10 +143,15 @@ def get_rose_calm_sxs_annotations(titles, calm):
         anno["y"] = anno["y"] - 0.556
         # anno["y"] = anno["y"] - 0.01
         anno["font"] = {"color": "#000", "size": 10}
-        calm_text = str(int(round(calm.iloc[k]["percent"] * 100))) + "%"
-        if calm.iloc[k]["percent"] > 0.2:
-            # If there's enough room, add the "calm" text fragment
-            calm_text += " calm"
+
+        # if indexing fails, insufficient data
+        try:
+            calm_text = str(int(round(calm.iloc[k]["percent"] * 100))) + "%"
+            if calm.iloc[k]["percent"] > 0.2:
+                # If there's enough room, add the "calm" text fragment
+                calm_text += " calm"
+        except IndexError:
+            calm_text = ""
 
         anno["text"] = calm_text
         k += 1
@@ -181,14 +187,16 @@ def get_rose_traces(d, traces, showlegend=False):
     return max_petal
 
 
-@app.callback(Output("exceedance_plot", "figure"), [Input("communities-dropdown", "value")])
+@app.callback(
+    Output("exceedance_plot", "figure"), [Input("communities-dropdown", "value")]
+)
 def update_exceedance_plot(community):
     """Plot line chart of allowable crosswind threshold exceedance"""
     df = exceedance.loc[exceedance["sid"] == community]
 
     title = "Test Allowable crosswind component exceedance"
     fig = px.line(df, x="direction", y="exceedance", color="threshold", title=title)
-    fig.update_layout({'plot_bgcolor': 'rgba(0, 0, 0, 0)', "yaxis.gridcolor": "black"})
+    fig.update_layout({"plot_bgcolor": "rgba(0, 0, 0, 0)", "yaxis.gridcolor": "black"})
 
     return fig
 
@@ -201,7 +209,6 @@ def update_rose(community):
     # Subset for community & 0=year
     # d = data.loc[(data["sid"] == community) & (data["month"] == 0)]
     # month not used in these data, for now
-
 
     d = data.loc[data["sid"] == community]
     get_rose_traces(d, traces, True)
@@ -266,68 +273,24 @@ def update_rose(community):
     return {"layout": rose_layout, "data": traces}
 
 
-@app.callback(
-    Output("rose_sxs", "figure"), [Input("communities-dropdown", "value")]
-)
-def update_rose_sxs(community):
+@app.callback(Output("rose_sxs", "figure"), [Input("communities-dropdown", "value")])
+def update_rose_sxs(sid):
     """
     Create side-by-side (sxs) plot of wind roses from different decades
     """
-
+    station_name = luts.communities.loc[sid]["place"]
+    # initialize figure (display blank fig even if insufficient data)
     # t = top margin in % of figure.
     subplot_spec = dict(type="polar", t=0.02)
-    fig = make_subplots(
-        rows=1,
-        cols=2,
-        horizontal_spacing=0.03,
-        #vertical_spacing=0.04,
-        specs=[[subplot_spec, subplot_spec]],
-        subplot_titles=["1980-1999", "2010-2019"],
-    )
+    subplot_args = {
+        "rows": 1,
+        "cols": 2,
+        "horizontal_spacing": 0.03,
+        "specs": [[subplot_spec, subplot_spec]],
+        "subplot_titles": ["", ""],
+    }
 
-    max_axes = pd.DataFrame()
-    month = 1
-    c_data = data.loc[data["sid"] == community]
-    data_list = [c_data.loc[c_data["decade"] == decade] for decade in ["1990-1999", "2010-2019"]]
-    max_axes = pd.DataFrame()
-    for df, show_legend, i in zip(data_list, [True, False], np.arange(1, 3)):
-        traces = []
-        max_axes = max_axes.append(get_rose_traces(df, traces, show_legend), ignore_index=True)
-        _ = [fig.add_trace(trace, row=1, col=i) for trace in traces]
-
-    # max_axes = pd.concat([get_rose_traces(df, traces, show_legend) for df, show_legend in zip(data_list, [True, False])])
-    # _ = [fig.add_trace(traces[i], row=1, col=i) for i in np.arange(1, 3)]
-
-    # Determine maximum r-axis and r-step.
-    # Adding one and using floor(/2.5) was the
-    # result of experimenting with values that yielded
-    # about 3 steps in most cases, with a little headroom
-    # for the r-axis outer ring.
-    rmax = max_axes.max() + 1
-    rstep = math.floor(rmax / 2.5)
-
-    # Apply formatting to subplot titles,
-    # which are actually annotations.
-    for i in fig["layout"]["annotations"]:
-        i["y"] = i["y"] + 0.05
-        i["font"] = dict(size=14, color="#444")
-        i["text"] = "<b>" + i["text"] + "</b>"
-
-    c_name = luts.communities.loc[community]["place"]
-
-    # Generate calms.  Subset by community, re-index
-    # for easy access, preprocess percent hole size,
-    # drop unused columns.
-    c = calms[calms["sid"] == community]
-    c = c.reset_index()
-    c = c.assign(percent=c["percent"] / 100)
-
-    # Get calms as annotations, then merge
-    # them into the subgraph title annotations
-    fig["layout"]["annotations"] = fig["layout"][
-        "annotations"
-    ] + get_rose_calm_sxs_annotations(fig["layout"]["annotations"], c)
-
+    # defults for displaying figure regardless of data availability
     polar_props = dict(
         bgcolor="#fff",
         angularaxis=dict(
@@ -346,36 +309,201 @@ def update_rose_sxs(community):
             color="#888",
             gridcolor="#efefef",
             tickangle=0,
-            range=[0, rmax],
+            range=[0, 5],
             tick0=1,
-            dtick=rstep,
+            dtick=10,
             ticksuffix="%",
             showticksuffix="last",
             showline=False,  # hide the dark axis line
             tickfont=dict(color="#444"),
         ),
     )
-    fig.update_layout(
-        title=dict(
-            text="Historical change in winds, " + c_name,
+
+    layout = {
+        "title": dict(
+            text="Historical change in winds, " + station_name,
             font=dict(family="Open Sans", size=18),
             x=0.5,
         ),
-        margin=dict(l=0, t=100, r=0, b=0),
-        font=dict(family="Open Sans", size=10),
-        legend=dict(x=0, y=0, orientation="h"),
-        height=700,
-        paper_bgcolor="#fff",
-        plot_bgcolor="#fff",
+        "margin": dict(l=0, t=100, r=0, b=0),
+        "font": dict(family="Open Sans", size=10),
+        "legend": dict(x=0, y=0, orientation="h"),
+        "height": 700,
+        "paper_bgcolor": "#fff",
+        "plot_bgcolor": "#fff",
         # We need to explicitly define the rotations
         # we need for each named subplot.
         # TODO is there a more elegant way to
         # generate this list of things?
-        polar1={**polar_props, **{"hole": c.iloc[0]["percent"]}},
-        polar2={**polar_props, **{"hole": c.iloc[1]["percent"]}},
-    )
+        "polar1": {**polar_props, **{"hole": 0.1}},
+        "polar2": {**polar_props, **{"hole": 0.1}},
+    }
+
+    # filter to station and
+    station_roses = roses.loc[roses["sid"] == sid]
+    # available decades for particular station
+    available_decades = station_roses["decade"].unique()
+    # if none, return blank template plot
+    if len(available_decades) == 0:
+        # return blank plot if insufficient data
+        layout["title"]["text"] = ""
+        # layout["polar1"]["radialaxis"]["marker_line_color"] = "#fff"
+
+        fig = make_subplots(**subplot_args)
+        fig.update_layout(**layout)
+
+        empty_trace = go.Barpolar(
+            {
+                "marker_color": "#fff",
+                "marker_line_color": "#fff",
+                "r": np.repeat(1, 36),
+                "showlegend": False,
+                "theta": np.append(np.arange(10, 370, 10), 0),
+            }
+        )
+        traces = [empty_trace, empty_trace]
+        _ = [fig.add_trace(traces[i], row=1, col=(i + 1)) for i in [0, 1]]
+
+        fig.add_annotation(
+            text=f"{station_name} does not have sufficient data for this comparison.",
+            xref="paper",
+            yref="paper",
+            x=0.5,
+            y=0.5,
+            showarrow=False,
+        )
+
+        return fig
+
+    else:
+        for decade in luts.decades.values():
+            # select oldest decade and most recent decade
+            subplot_titles = [decade, "2010-2019"]
+            data_list = [
+                station_roses.loc[station_roses["decade"] == d] for d in subplot_titles
+            ]
+            break
+
+    subplot_args["subplot_titles"] = subplot_titles
+    fig = make_subplots(**subplot_args)
+    # t = top margin in % of figure.
+    # subplot_spec = dict(type="polar", t=0.02)
+    # fig = make_subplots(
+    #     rows=1,
+    #     cols=2,
+    #     horizontal_spacing=0.03,
+    #     #vertical_spacing=0.04,
+    #     specs=[[subplot_spec, subplot_spec]],
+    #     subplot_titles=subplot_titles,
+    # )
+
+    month = 1
+    max_axes = pd.DataFrame()
+    for df, show_legend, i in zip(data_list, [True, False], [1, 2]):
+        traces = []
+        max_axes = max_axes.append(
+            get_rose_traces(df, traces, show_legend), ignore_index=True
+        )
+        _ = [fig.add_trace(trace, row=1, col=i) for trace in traces]
+
+    # max_axes = pd.concat([get_rose_traces(df, traces, show_legend) for df, show_legend in zip(data_list, [True, False])])
+    # _ = [fig.add_trace(traces[i], row=1, col=i) for i in np.arange(1, 3)]
+
+    # Determine maximum r-axis and r-step.
+    # Adding one and using floor(/2.5) was the
+    # result of experimenting with values that yielded
+    # about 3 steps in most cases, with a little headroom
+    # for the r-axis outer ring.
+    rmax = max_axes.max() + 1
+    polar_props["radialaxis"]["range"][1] = rmax
+    polar_props["radialaxis"]["dtick"] = math.floor(rmax / 2.5)
+
+    # Apply formatting to subplot titles,
+    # which are actually annotations.
+    for i in fig["layout"]["annotations"]:
+        i["y"] = i["y"] + 0.05
+        i["font"] = dict(size=14, color="#444")
+        i["text"] = "<b>" + i["text"] + "</b>"
+
+    # Generate calms.  Subset by community, re-index
+    # for easy access, preprocess percent hole size,
+    # drop unused columns.
+    station_calms = calms[calms["sid"] == sid].reset_index()
+    station_calms = station_calms.reset_index()
+    station_calms = station_calms.assign(percent=station_calms["percent"] / 100)
+
+    # Get calms as annotations, then merge
+    # them into the subgraph title annotations
+    fig["layout"]["annotations"] = fig["layout"][
+        "annotations"
+    ] + get_rose_calm_sxs_annotations(fig["layout"]["annotations"], station_calms)
+
+    fig.update_layout(**layout)
+
+    # fig.update_layout(
+    #     title=dict(
+    #         text="Historical change in winds, " + station_name,
+    #         font=dict(family="Open Sans", size=18),
+    #         x=0.5,
+    #     ),
+    #     margin=dict(l=0, t=100, r=0, b=0),
+    #     font=dict(family="Open Sans", size=10),
+    #     legend=dict(x=0, y=0, orientation="h"),
+    #     height=700,
+    #     paper_bgcolor="#fff",
+    #     plot_bgcolor="#fff",
+    #     # We need to explicitly define the rotations
+    #     # we need for each named subplot.
+    #     # TODO is there a more elegant way to
+    #     # generate this list of things?
+    #     polar1={**polar_props, **{"hole": station_calms.iloc[0]["percent"]}},
+    #     polar2={**polar_props, **{"hole": station_calms.iloc[1]["percent"]}},
+    # )
+
     return fig
 
+
+@app.callback(Output("wep_box", "figure"), [Input("communities-dropdown", "value")])
+def update_box_plots(community):
+    """ Generate box plot for monthly averages """
+
+    d = wep_quantiles.loc[(wep_quantiles["sid"] == community)]
+    c_name = luts.communities.loc[community]["place"]
+
+    return go.Figure(
+        layout=dict(
+            font=dict(family="Open Sans", size=10),
+            title=dict(
+                text="Wind energy potential (speed cubed, currently) for " + c_name,
+                font=dict(size=18, family="Open Sans"),
+                x=0.5,
+            ),
+            boxmode="group",
+            yaxis={
+                "title": "Cube of wind speed (mph)",
+                "rangemode": "tozero",
+                "fixedrange": True,
+            },
+            height=550,
+            margin={"l": 50, "r": 50, "b": 50, "t": 50, "pad": 4},
+            xaxis=dict(
+                tickvals=list(luts.months.keys()),
+                ticktext=list(luts.months.values()),
+                fixedrange=True,
+            ),
+        ),
+        data=[
+            go.Box(
+                name="placeholder",
+                fillcolor=luts.speed_ranges["10-14"]["color"],
+                x=d.month,
+                y=d.wep,
+                hovertemplate="%{x} %{y} mph",
+                marker=dict(color=luts.speed_ranges["22+"]["color"]),
+                line=dict(color=luts.speed_ranges["22+"]["color"]),
+            )
+        ],
+    )
 
 
 if __name__ == "__main__":
