@@ -104,8 +104,7 @@ def main():
     raw_dir = base_dir.joinpath("raw/iem")
     raw_fps = list(raw_dir.glob("*"))
 
-    # CHANGE NAME
-    out_fp = Path("data/stations_test.pickle")
+    out_fp = Path("data/stations.pickle")
 
     # read data
     df = run_read_data(raw_fps, ncpus)

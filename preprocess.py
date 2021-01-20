@@ -331,17 +331,20 @@ def exceedance_frequencies(winds, d, thresholds):
     """Compute exceedance frequencies for given thresholds"""
     crosswinds = crosswind_component(winds["ws"], winds["wd"], d)
     n = crosswinds.shape[0]
-    return [round((crosswinds > threshold).sum() / n, 4) * 100 for threshold in thresholds]
+    return [
+        round((crosswinds > threshold).sum() / n, 4) * 100 for threshold in thresholds
+    ]
 
 
 def compute_exceedance(station, thresholds):
     """Compute exceedance frequencies for single station and set of thresholds"""
     directions = np.arange(0, 180, 10)
     exceedance = [
-        exceedance_frequencies(station[["ws", "wd"]], d, thresholds)
-        for d in directions
+        exceedance_frequencies(station[["ws", "wd"]], d, thresholds) for d in directions
     ]
-    exceedance = [f for frequencies in exceedance for f in frequencies] # unpack smal lists
+    exceedance = [
+        f for frequencies in exceedance for f in frequencies
+    ]  # unpack smal lists
     return pd.DataFrame(
         {
             "sid": station["sid"].values[0],
@@ -354,7 +357,6 @@ def compute_exceedance(station, thresholds):
 
 def process_crosswinds(stations, ncpus):
     """compute crosswind component frequencies"""
-
     print("Preprocessing allowable crosswind exceedance", end="...")
     tic = time.perf_counter()
 
@@ -362,7 +364,7 @@ def process_crosswinds(stations, ncpus):
     stations = stations.drop(columns="gust_mph").dropna()
     # filter out stations where first obs is younger than 2015-01-01
     min_ts = stations.groupby("sid")["ts"].min()
-    keep_sids = min_ts[min_ts < pd.to_datetime("1991-01-01")].index.values
+    keep_sids = min_ts[min_ts < pd.to_datetime("2015-01-01")].index.values
     stations = stations[stations["sid"].isin(keep_sids)]
 
     thresholds = np.round(np.array([10.5, 13, 16]) * 1.15078, 2)
@@ -382,6 +384,51 @@ def process_crosswinds(stations, ncpus):
     crosswinds = exceedance
 
     return crosswinds
+
+
+def compute_wep_box(station):
+
+    station["wep"] = np.round(station["ws"].astype(np.float32) ** 3, 2)
+    # hack to create boxplots from summarized data
+    quantiles = [0.05, 0.25, 0.25, 0.5, 0.75, 0.75, 0.95]
+    quantiles_list = [(np.round(station.groupby(["year", "month"])["wep"].quantile(q), 2), q)
+                for q in quantiles]
+    quantiles_used = [q for i in quantiles_list for q in np.repeat(i[1], len(i[0].index))]
+    wep_quantiles = pd.DataFrame(pd.concat([i[0] for i in quantiles_list])).reset_index()
+    # add quantile value for aggregating
+    wep_quantiles["quantile"] = quantiles_used
+    wep_quantiles = wep_quantiles.groupby(["month", "quantile"])["wep"].mean().reset_index()
+    wep_quantiles["sid"] = station["sid"].values[0]
+
+    return wep_quantiles
+
+
+def process_wep(stations, ncpus):
+    """Process wind energy potential"""
+    print(f"Preprocessing weind energy potential using {ncpus} cores", end="...")
+    tic = time.perf_counter()
+
+    # drop gusts column, discard obs with NaN in direction or speed
+    stations = stations.drop(columns="gust_mph").dropna()
+    # filter out stations where first obs is younger than 2015-01-01
+    min_ts = stations.groupby("sid")["ts"].min()
+    keep_sids = min_ts[min_ts < pd.to_datetime("2015-01-01")].index.values
+
+    stations["month"] = stations["ts"].dt.month
+    stations["year"] = stations["ts"].dt.year
+
+    # this may not be more efficient than the multilevel groupby, explore later
+    station_dfs = [df for sid, df in stations.groupby("sid")]
+    with Pool(ncpus) as pool:
+        wep_quantiles = pd.concat(pool.map(compute_wep_box, station_dfs))
+
+    wep_quantiles_fp = "data/wep_box_data.pickle"
+    wep_quantiles.to_pickle(wep_quantiles_fp)
+
+    print(f"done, {round(time.perf_counter() - tic, 2)}s")
+    print(f"Wind energy potential box plot data saved to {wep_quantiles_fp}")
+
+    return wep_quantiles
 
 
 if __name__ == "__main__":
@@ -425,12 +472,20 @@ if __name__ == "__main__":
         dest="crosswinds",
         help="Pre-process crosswinds data",
     )
+    parser.add_argument(
+        "-w",
+        "--wind-energy",
+        action="store_true",
+        dest="wep",
+        help="Pre-process wind energy potential data",
+    )
     args = parser.parse_args()
     ncpus = args.ncpus
     do_stations = args.stations
     do_roses = args.roses
     do_calms = args.calms
     do_crosswinds = args.crosswinds
+    do_wep = args.wep
 
     # gather station data into single file
     print("Reading data")
@@ -453,3 +508,6 @@ if __name__ == "__main__":
 
     if do_crosswinds:
         crosswinds = process_crosswinds(stations, ncpus)
+
+    if do_wep:
+        wep = process_wep(stations, ncpus)
