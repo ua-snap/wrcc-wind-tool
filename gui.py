@@ -76,7 +76,7 @@ intro = wrap_in_section(
                         className="survey-link",
                         children=[
                             html.P(
-                                "This tool displays recorded hourly wind data 1980-2015 for 67 Alaska communities.",
+                                "Intro text.",
                                 className="content is-size-4",
                             ),
                             html.A(
@@ -120,7 +120,7 @@ form_fields = html.Div(
     children=[
         dcc.Markdown(
             """
-            Explore past wind data from 67 communities across Alaska. Start by choosing a specific community.
+            Explore past wind data from airports in Alaska. Start by choosing a specific airport.
 """,
             className="content is-size-5",
         ),
@@ -266,7 +266,7 @@ columns = wrap_in_section(
                                             ),
                                             dcc.Markdown(
                                                 """
-    These wind roses show prevailing wind direction and speed for a given location, for two historical time periods. Data show trends averaged over 10 years of observations (1980&ndash;2014).
+    These wind roses show prevailing wind direction and speed for two historical decades: "recent" (2010-2019) and older decades if data availability allow.
 
      * **Spokes** in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).
      * **Colors** within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.
@@ -274,11 +274,33 @@ columns = wrap_in_section(
          """,
                                                 className="content is-size-6",
                                             ),
+                                            html.Div(
+                                                id="rose-sxs-container", children=[
+                                                    dcc.Graph(
+                                                        id="rose_sxs",
+                                                        figure=go.Figure(),
+                                                        config=luts.fig_configs,
+                                                    ),
+                                                ]
+                                            ),
+        
+                                            html.H3(
+                                                "Wind energy potential",
+                                                className="title is-4 title--rose",
+                                            ),
                                             dcc.Graph(
-                                                id="rose_sxs",
+                                                id="wep_box",
                                                 figure=go.Figure(),
                                                 config=luts.fig_configs,
                                             ),
+                                            dcc.Markdown(
+                                                """
+    These boxplots display the averaged quantiles over span of available data. 
+
+     * **Spokes** in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).
+     * **Colors** within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.
+     * **Size of the center** hole indicates the &percnt; of calm winds.
+         """,                               )
                                         ],
                                     ),
                                     html.Hr(),
