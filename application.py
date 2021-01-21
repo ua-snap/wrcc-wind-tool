@@ -436,6 +436,115 @@ def update_rose_sxs(sid):
     return fig
 
 
+@app.callback(Output("rose_diff", "figure"), [Input("comparison-rose-data", "value")])
+def update_diff_rose(rose_dict):
+    """Generate difference wind rose by taking difference in 
+    frequencies of speed/direction bins
+    """
+    # set up layout info first, used in event that selected station lacks
+    # sufficient data for comparison
+    station_name = luts.communities.loc[rose_dict["sid"]]["place"]
+
+    rose_layout = {
+        "title": dict(text="", font=dict(size=18),),
+        "height": 700,
+        "font": dict(family="Open Sans", size=10),
+        "margin": {"l": 0, "r": 0, "b": 20, "t": 75},
+        "legend": {"orientation": "h", "x": 0, "y": 1},
+        "polar": {
+            "legend": {"orientation": "h"},
+            "angularaxis": {
+                "rotation": 90,
+                "direction": "clockwise",
+                "tickmode": "array",
+                "tickvals": [0, 45, 90, 135, 180, 225, 270, 315],
+                "ticks": "",  # hide tick marks
+                "ticktext": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+                "tickfont": {"color": "#444"},
+                "showline": False,  # no boundary circles
+                "color": "#888",  # set most colors to #888
+                "gridcolor": "#efefef",
+            },
+            "radialaxis": {
+                "color": "#888",
+                "gridcolor": "#efefef",
+                "ticksuffix": "%",
+                "showticksuffix": "last",
+                "tickcolor": "rgba(0, 0, 0, 0)",
+                "tick0": 0,
+                "dtick": 1,
+                "ticklen": 10,
+                "showline": False,  # hide the dark axis line
+                "tickfont": {"color": "#444"},
+            },
+            "hole": 0.2,
+        },
+    }
+
+    try:
+        empty_trace = go.Barpolar(rose_dict["trace_dict"])
+        rose_layout["annotations"] = [rose_dict["anno_dict"]]
+
+        return {"layout": rose_layout, "data": [empty_trace]}
+
+    except KeyError:
+        # Thrown in case that there is sufficient data for this graphic
+        None
+
+    data_list = [pd.DataFrame(df_dict) for df_dict in rose_dict["data_list"]]
+
+    rose_data = data_list[0]
+    # compute freuency differences
+    rose_data["frequency"] = data_list[1]["frequency"] - rose_data["frequency"]
+
+    traces = []
+    get_rose_traces(rose_data, traces, True, True)
+
+    station_calms = pd.DataFrame(rose_dict["calms_dict"])
+    # compute calm difference
+    calm_diff = station_calms.iloc[1]["percent"] - station_calms.iloc[0]["percent"]
+    calm_lut = {
+        True: {"text": "increased", "fill": "#bbb"},
+        False: {"text": "decreased", "fill": luts.speed_ranges["10-14"]["color"]},
+    }
+    calm_change = calm_lut[calm_diff > 0]
+    calm_text = (
+        f"calms <b>{calm_change['text']}</b><br>by {abs(round(calm_diff * 100, 1))}%"
+    )
+    rose_layout["annotations"] = [
+        {
+            "x": 0.5,
+            "y": 0.5,
+            "showarrow": False,
+            "text": calm_text,
+            "xref": "paper",
+            "yref": "paper",
+        }
+    ]
+    rose_layout["shapes"] = [
+        {
+            "type": "circle",
+            "x0": 0.44,
+            "y0": 0.4,
+            "x1": 0.56,
+            "y1": 0.6,
+            "text": calm_text,
+            "xref": "paper",
+            "yref": "paper",
+            "line": {"color": "#fff"},
+            "opacity": calm_diff / 0.2,
+            "fillcolor": calm_change["fill"],
+        }
+    ]
+
+    decade1, decade2 = rose_dict["target_decades"]
+    rose_layout["title"][
+        "text"
+    ] = f"Change in winds from {decade1} to {decade2}, {station_name}"
+
+    return {"layout": rose_layout, "data": traces}
+
+
 @app.callback(Output("wep_box", "figure"), [Input("communities-dropdown", "value")])
 def update_box_plots(community):
     """ Generate box plot for monthly averages """
