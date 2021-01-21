@@ -37,6 +37,12 @@ def read_and_filter_csv(fp):
     # of light and variable wind, as seen in METARs e.g. for PAEI on 2011-10-17
     # df.loc[(df.ws != 0) & (~np.isnan(df.ws)) & (df.wd == 0), "drct"] = np.nan
 
+    # Different stations have different minimum values recorded!
+    # For ASOS, winds measured at 2 knots or less should be reported calm
+    # this isn't always the case! for PFYU, wind speeds of 1 knot are recorded.
+    # standardize by changing winds slower than 2.3 mph to calm (0 ws, 0 wd).
+    df.loc[df["sped"] <= 2.3, ["sped", "drct"]] = 0
+
     # set negative wind gusts to NaN
     df.loc[df["gust_mph"] < 0, "gust_mph"] = np.nan
 
