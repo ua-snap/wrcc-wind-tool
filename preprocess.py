@@ -8,73 +8,10 @@ import pandas as pd
 from datetime import datetime
 from luts import speed_ranges, decades
 from multiprocessing import Pool
+from pathlib import Path
 
 
-def read_station(fp):
-    """Read in a station data file
-    
-    Args:
-        fp: Path of file to be read.
-
-    Notes:
-        Defined globally for Pool.
-
-    """
-    df = pd.read_csv(fp)
-    # filter out "biased" wind data? Need to check this.
-    # df = df[df["wd"] != 0]
-    # df = df[df["ws"] != 0]
-    # make columns and reorder them
-    df = df.assign(
-        month=pd.to_numeric(df["ts"].str.slice(5, 7)),
-        year=pd.to_numeric(df["ts"].str.slice(0, 4)),
-        sid=fp.split("_")[-2],
-    )
-    df.loc[df["year"] < 1991, "period"] = "old"
-    df.loc[df["year"] > 2004, "period"] = "new"
-    # subset to either new/old
-    df = df.dropna()
-    cols = df.columns.tolist()
-    cols = [cols[-1]] + cols[:-1]
-    df = df[cols]
-    return df
-
-
-def process_stations(asos_dir, ncpus):
-    """Collect station data into a dataframe. 
-
-    Args:
-        asos_dir: path to dirctory containing ASOS data.
-        ncpus: number of CPU cores to use
-
-    Returns:
-        pandas.DataFrame containing all data present. 
-
-    Notes:
-        Utilizes multiple cores
-        Writes pickled pandas.DataFrame to $SCRATCH_DIR/stations.p.
-        stations.p is ready to be processed into wind roses.
-        values with direction=0 or speed=0 are dropped to avoid north bias.
-
-    """
-    print("*** Gathering station data into single data.frame... ***")
-
-    # pool reading of files
-    asos_fps = [os.path.join(asos_dir, fn) for fn in os.listdir(asos_dir)]
-    p = Pool(ncpus)
-    data_list = p.map(read_station, asos_fps)
-    p.close()
-    p.join()
-    # concat and pickle it
-    data = pd.concat(data_list)
-
-    stations_fp = str(asos_dir).replace("asos", "stations.pickle")
-    data.to_pickle(stations_fp)
-    print(f"Gathered station data written to {stations_fp}")
-    return data
-
-
-def prepare_stations(stations):
+def process_stations(stations, prepped_fp):
     """Prepare data for more specific graphic pre-processing.  
 
     Args:
@@ -90,8 +27,7 @@ def prepare_stations(stations):
         stations.loc[stations["ts"].dt.year.isin(dyears), "decade"] = decades[dyear]
 
     # Not sure what else to include in this function as of now.
-    prep_fp = "data/stations_prepped.pickle"
-    stations.to_pickle(prep_fp)
+    stations.to_pickle(prepped_fp)
 
     return stations
 
@@ -194,7 +130,7 @@ def chunk_to_rose(station):
     return accumulator
 
 
-def process_roses(stations, ncpus):
+def process_roses(stations, ncpus, roses_fp):
     """
     For each station we need one trace for each direction.
 
@@ -275,7 +211,6 @@ def process_roses(stations, ncpus):
 
     roses = pd.concat(rose_dfs)
     # concat and pickle it
-    roses_fp = "data/roses.pickle"
     roses.to_pickle(roses_fp)
 
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
@@ -284,7 +219,7 @@ def process_roses(stations, ncpus):
     return roses_fp
 
 
-def process_calms(stations, roses):
+def process_calms(stations, roses, calms_fp):
     """
     For each station/year/month, generate a count
     of # of calm measurements.
@@ -355,7 +290,7 @@ def compute_exceedance(station, thresholds):
     )
 
 
-def process_crosswinds(stations, ncpus):
+def process_crosswinds(stations, ncpus, exceedance_fp):
     """compute crosswind component frequencies"""
     print("Preprocessing allowable crosswind exceedance", end="...")
     tic = time.perf_counter()
@@ -374,8 +309,6 @@ def process_crosswinds(stations, ncpus):
         exceedance_dfs = pool.starmap(compute_exceedance, args)
 
     exceedance = pd.concat(exceedance_dfs)
-
-    exceedance_fp = "data/crosswind_exceedance.pickle"
     exceedance.to_pickle(exceedance_fp)
 
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
@@ -403,7 +336,7 @@ def compute_wep_box(station):
     return wep_quantiles
 
 
-def process_wep(stations, ncpus):
+def process_wep(stations, ncpus, wep_quantiles_fp):
     """Process wind energy potential"""
     print(f"Preprocessing weind energy potential using {ncpus} cores", end="...")
     tic = time.perf_counter()
@@ -422,7 +355,6 @@ def process_wep(stations, ncpus):
     with Pool(ncpus) as pool:
         wep_quantiles = pd.concat(pool.map(compute_wep_box, station_dfs))
 
-    wep_quantiles_fp = "data/wep_box_data.pickle"
     wep_quantiles.to_pickle(wep_quantiles_fp)
 
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
@@ -487,27 +419,32 @@ if __name__ == "__main__":
     do_crosswinds = args.crosswinds
     do_wep = args.wep
 
+    base_dir = Path(os.getenv("BASE_DIR"))
+
     # gather station data into single file
     print("Reading data")
+    prepped_fp = base_dir.joinpath("stations_prepped.pickle")
     if do_stations:
         # stations = process_stations("data/asos", ncpus)
-        stations = pd.read_pickle("data/stations.pickle")
-        stations = prepare_stations(stations)
+        stations = pd.read_pickle(base_dir.joinpath("stations.pickle"))
+        stations = process_stations(stations, prepped_fp)
     else:
-        stations_fp = "data/stations_prepped.pickle"
-        stations = pd.read_pickle(stations_fp)
+        stations = pd.read_pickle(prepped_fp)
 
-    # process roses
+    roses_fp = base_dir.joinpath("roses.pickle")
     if do_roses:
-        roses = process_roses(stations, ncpus)
+        roses = process_roses(stations, ncpus, roses_fp)
 
     if do_calms:
+        calms_fp = base_dir.joinpath("calms.pickle")
         if not do_roses:
-            roses = pd.read_pickle("data/roses.pickle")
-        calms_fp = process_calms(stations, roses)
+            roses = pd.read_pickle(roses_fp)
+        calms = process_calms(stations, roses, calms_fp)
 
     if do_crosswinds:
-        crosswinds = process_crosswinds(stations, ncpus)
+        exceedance_fp = base_dir.joinpath("crosswind_exceedance.pickle")
+        crosswinds = process_crosswinds(stations, ncpus, exceedance_fp)
 
     if do_wep:
-        wep = process_wep(stations, ncpus)
+        wep_quantiles_fp = base_dir.joinpath("wep_box_data.pickle")
+        wep = process_wep(stations, ncpus, wep_quantiles_fp)

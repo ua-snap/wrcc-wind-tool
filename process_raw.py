@@ -104,7 +104,7 @@ def main():
     raw_dir = base_dir.joinpath("raw/iem")
     raw_fps = list(raw_dir.glob("*"))
 
-    out_fp = Path("data/stations.pickle")
+    out_fp = base_dir.joinpath("stations.pickle")
 
     # read data
     df = run_read_data(raw_fps, ncpus)
