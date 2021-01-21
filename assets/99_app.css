@@ -154,6 +154,10 @@ when the page is loading.
     max-width: 1000px;
     height: 800px;
 }
+#rose_diff {
+    max-width: 1000px;
+    height: 800px;
+}
 #threshold_graph {
     max-width: 970px;
     height: 400px;

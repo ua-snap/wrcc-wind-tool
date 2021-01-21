@@ -109,7 +109,9 @@ communities_dropdown_field = html.Div(
                         for index, community in luts.communities.iterrows()
                     ],
                     value="PAFA",
-                )
+                ),
+                # blank component only used for storing filtered wind rose data
+                html.P(id="comparison-rose-data")
             ],
         ),
     ],
@@ -251,6 +253,7 @@ columns = wrap_in_section(
                                         children=[
                                             html.A(id="toc_g2"),
                                             # maybe reorganize?
+                                            # Better title: allowable crosswind component exceedance profile
                                             html.H3(
                                                 "Crosswind component calculation",
                                                 className="title is-4 title--rose",

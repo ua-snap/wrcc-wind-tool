@@ -22,9 +22,6 @@ roses = pd.read_pickle(base_dir.joinpath("roses.pickle"))
 calms = pd.read_pickle(base_dir.joinpath("calms.pickle"))
 exceedance = pd.read_pickle(base_dir.joinpath("crosswind_exceedance.pickle"))
 wep_quantiles = pd.read_pickle(base_dir.joinpath("wep_box_data.pickle"))
-# monthly_means = pd.read_csv("monthly_averages.csv")
-# future_rose = pd.read_csv("future_roses.csv")
-# percentiles = pd.read_csv("percentiles.csv", index_col=0)
 
 # We set the requests_pathname_prefix to enable
 # custom URLs.
@@ -145,15 +142,10 @@ def get_rose_calm_sxs_annotations(titles, calm):
         anno["y"] = anno["y"] - 0.556
         # anno["y"] = anno["y"] - 0.01
         anno["font"] = {"color": "#000", "size": 10}
-
-        # if indexing fails, insufficient data
-        try:
-            calm_text = str(int(round(calm.iloc[k]["percent"] * 100))) + "%"
-            if calm.iloc[k]["percent"] > 0.2:
-                # If there's enough room, add the "calm" text fragment
-                calm_text += " calm"
-        except IndexError:
-            calm_text = ""
+        calm_text = str(int(round(calm.iloc[k]["percent"] * 100))) + "%"
+        if calm.iloc[k]["percent"] > 0.2:
+            # If there's enough room, add the "calm" text fragment
+            calm_text += " calm"
 
         anno["text"] = calm_text
         k += 1
@@ -161,7 +153,7 @@ def get_rose_calm_sxs_annotations(titles, calm):
     return calm_annotations
 
 
-def get_rose_traces(d, traces, showlegend=False):
+def get_rose_traces(d, traces, showlegend=False, lines=False):
     """
     Get all traces for a wind rose, given the data chunk.
     Month is used to tie the subplot to the formatting
@@ -284,8 +276,75 @@ def update_rose(community):
     return {"layout": rose_layout, "data": traces}
 
 
-@app.callback(Output("rose_sxs", "figure"), [Input("communities-dropdown", "value")])
-def update_rose_sxs(sid):
+# function to check sufficient data for side-by-side and diff? Need a invisible placeholder in the gui?
+# This function should return the filtered data, so it can be used by both sxs rose and diff rose
+@app.callback(
+    Output("comparison-rose-data", "value"), [Input("communities-dropdown", "value")]
+)
+def get_comparison_data(sid):
+    """Prep data that will be used in the side-by-side roses and 
+    the difference polar line chart
+    """
+    station_name = luts.communities.loc[sid]["place"]
+    station_roses = roses.loc[roses["sid"] == sid]
+    # available decades for particular station
+    available_decades = station_roses["decade"].unique()
+    # if none, return blank template plot
+    if len(available_decades) == 0:
+        # if insufficient data, return empty trace dict
+        return {
+            "trace_dict": {
+                "marker_color": "#fff",
+                "marker_line_color": "#fff",
+                "r": np.repeat(1, 36),
+                "showlegend": False,
+                "theta": np.append(np.arange(10, 370, 10), 0),
+            },
+            "sid": sid,
+            "station_name": station_name,
+            "anno_dict": {
+                "text": f"{station_name} does not have sufficient data for this comparison.",
+                "xref": "paper",
+                "yref": "paper",
+                "x": 0.5,
+                "y": 0.6,
+                "showarrow": False,
+                "bgcolor": "rgba(211,211,211,0.5)",
+                "font": {"size": 22},
+            },
+        }
+
+    # otherwise, return rose and calms data
+    # done in for loop to take the earliest decade
+    # while preserving other decades in preprocessed data
+    for decade in luts.decades.values():
+        # select oldest decade and 2010-2019
+        if decade in available_decades:
+            target_decades = [decade, "2010-2019"]
+            data_list = [
+                station_roses.loc[station_roses["decade"] == d] for d in target_decades
+            ]
+            break
+
+    # Generate calms.  Subset by community, re-index
+    # for easy access, preprocess percent hole size,
+    # drop unused columns.
+    station_calms = calms[calms["sid"] == sid].reset_index()
+    station_calms = station_calms.reset_index()
+    station_calms = station_calms.assign(percent=station_calms["percent"] / 100)
+
+    return {
+        "data_list": [df.to_dict() for df in data_list],
+        "target_decades": target_decades,
+        "sid": sid,
+        "calms_dict": station_calms.to_dict(),
+    }
+
+
+# @app.callback(Output("rose_sxs", "figure"), [Input("communities-dropdown", "value")])
+@app.callback(Output("rose_sxs", "figure"), [Input("comparison-rose-data", "value")])
+# def update_rose_sxs(sid):
+def update_rose_sxs(rose_dict):
     """
     Create side-by-side (sxs) plot of wind roses from different decades
     """
@@ -329,17 +388,17 @@ def update_rose_sxs(sid):
         ),
     )
 
-    station_name = luts.communities.loc[sid]["place"]
+    station_name = luts.communities.loc[rose_dict["sid"]]["place"]
 
     layout = {
         "title": dict(
-            text="Historical change in winds, " + station_name,
+            text="Historical wind comparison, " + station_name,
             font=dict(family="Open Sans", size=18),
             x=0.5,
         ),
         "margin": dict(l=0, t=100, r=0, b=0),
         "font": dict(family="Open Sans", size=10),
-        "legend": dict(x=0, y=0, orientation="h"),
+        "legend": {"orientation": "h", "x": 0, "y": 1},
         "height": 700,
         "paper_bgcolor": "#fff",
         "plot_bgcolor": "#fff",
@@ -351,55 +410,42 @@ def update_rose_sxs(sid):
         "polar2": {**polar_props, **{"hole": 0.1}},
     }
 
-    # filter to station and
-    station_roses = roses.loc[roses["sid"] == sid]
-    # available decades for particular station
-    available_decades = station_roses["decade"].unique()
-    # if none, return blank template plot
-    if len(available_decades) == 0:
-        # return blank plot if insufficient data
+    # this handles case of insufficient data for station,
+    try:
+        empty_trace = go.Barpolar(rose_dict["trace_dict"])
+
         layout["title"]["text"] = ""
 
         fig = make_subplots(**subplot_args)
         fig.update_layout(**layout)
 
-        empty_trace = go.Barpolar(
-            {
-                "marker_color": "#fff",
-                "marker_line_color": "#fff",
-                "r": np.repeat(1, 36),
-                "showlegend": False,
-                "theta": np.append(np.arange(10, 370, 10), 0),
-            }
-        )
         traces = [empty_trace, empty_trace]
         _ = [fig.add_trace(traces[i], row=1, col=(i + 1)) for i in [0, 1]]
 
-        fig.add_annotation(
-            text=f"{station_name} does not have sufficient data for this comparison.",
-            xref="paper",
-            yref="paper",
-            x=0.5,
-            y=0.6,
-            showarrow=False,
-            bgcolor="rgba(211,211,211,0.5)",
-            font={"size": 22},
-        )
+        # fig.add_annotation(
+        #     text=f"{station_name} does not have sufficient data for this comparison.",
+        #     xref="paper",
+        #     yref="paper",
+        #     x=0.5,
+        #     y=0.6,
+        #     showarrow=False,
+        #     bgcolor="rgba(211,211,211,0.5)",
+        #     font={"size": 22},
+        # )
+
+        fig.add_annotation(rose_dict["anno_dict"])
 
         return fig
 
-    else:
-        for decade in luts.decades.values():
-            # select oldest decade and 2010-2019
-            subplot_titles = [decade, "2010-2019"]
-            data_list = [
-                station_roses.loc[station_roses["decade"] == d] for d in subplot_titles
-            ]
-            break
+    except KeyError:
+        # continue
+        None
 
-    subplot_args["subplot_titles"] = subplot_titles
+    # subplot_args["subplot_titles"] = subplot_titles
+    subplot_args["subplot_titles"] = rose_dict["target_decades"]
     fig = make_subplots(**subplot_args)
 
+    data_list = [pd.DataFrame(df_dict) for df_dict in rose_dict["data_list"]]
     max_axes = pd.DataFrame()
     for df, show_legend, i in zip(data_list, [True, False], [1, 2]):
         traces = []
@@ -413,7 +459,7 @@ def update_rose_sxs(sid):
     # result of experimenting with values that yielded
     # about 3 steps in most cases, with a little headroom
     # for the r-axis outer ring.
-    rmax = max_axes.max() + 1
+    rmax = max_axes["frequency"].max() + 1
     polar_props["radialaxis"]["range"][1] = rmax
     polar_props["radialaxis"]["dtick"] = math.floor(rmax / 2.5)
     polar_props["radialaxis"]["showticklabels"] = True
@@ -425,12 +471,7 @@ def update_rose_sxs(sid):
         i["font"] = dict(size=14, color="#444")
         i["text"] = "<b>" + i["text"] + "</b>"
 
-    # Generate calms.  Subset by community, re-index
-    # for easy access, preprocess percent hole size,
-    # drop unused columns.
-    station_calms = calms[calms["sid"] == sid].reset_index()
-    station_calms = station_calms.reset_index()
-    station_calms = station_calms.assign(percent=station_calms["percent"] / 100)
+    station_calms = pd.DataFrame(rose_dict["calms_dict"])
     layout["polar1"]["hole"] = station_calms.iloc[0]["percent"]
     layout["polar2"]["hole"] = station_calms.iloc[1]["percent"]
 
