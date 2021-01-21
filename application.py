@@ -12,14 +12,16 @@ import plotly.graph_objs as go
 import plotly.express as px
 from dash.dependencies import Input, Output
 from gui import layout, path_prefix
+from pathlib import Path
 from plotly.subplots import make_subplots
 
 
 # Read data blobs and other items used from env
-roses = pd.read_pickle("data/roses.pickle")
-calms = pd.read_pickle("data/calms.pickle")
-exceedance = pd.read_pickle("data/crosswind_exceedance.pickle")
-wep_quantiles = pd.read_pickle("data/wep_box_data.pickle")
+base_dir = Path(os.getenv("BASE_DIR"))
+roses = pd.read_pickle(base_dir.joinpath("roses.pickle"))
+calms = pd.read_pickle(base_dir.joinpath("calms.pickle"))
+exceedance = pd.read_pickle(base_dir.joinpath("crosswind_exceedance.pickle"))
+wep_quantiles = pd.read_pickle(base_dir.joinpath("wep_box_data.pickle"))
 # monthly_means = pd.read_csv("monthly_averages.csv")
 # future_rose = pd.read_csv("future_roses.csv")
 # percentiles = pd.read_csv("percentiles.csv", index_col=0)
