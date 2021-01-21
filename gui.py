@@ -283,6 +283,15 @@ columns = wrap_in_section(
                                                     ),
                                                 ]
                                             ),
+                                            html.Div(
+                                                id="rose-diff-container", children=[
+                                                    dcc.Graph(
+                                                        id="rose_diff",
+                                                        figure=go.Figure(),
+                                                        config=luts.fig_configs,
+                                                    ),
+                                                ]
+                                            ),
         
                                             html.H3(
                                                 "Wind energy potential",
