@@ -171,16 +171,25 @@ def get_rose_traces(d, traces, showlegend=False):
     # Directly mutate the `traces` array.
     for sr, sr_info in luts.speed_ranges.items():
         dcr = d.loc[(d["speed_range"] == sr)]
+        r_list = dcr["frequency"].tolist()
+        theta_list = list(pd.to_numeric(dcr["direction_class"]) * 10)
         props = dict(
-            r=dcr["frequency"].tolist(),
-            theta=pd.to_numeric(dcr["direction_class"]) * 10,
+            r=r_list,
+            theta=theta_list,
             name=sr + " mph",
             hovertemplate="%{r} %{fullData.name} winds from %{theta}<extra></extra>",
             marker_color=sr_info["color"],
             showlegend=showlegend,
             legendgroup="legend",
         )
-        traces.append(go.Barpolar(props))
+        if lines:
+            props["mode"] = "lines"
+            # append first item of each to close the lines
+            props["r"].append(r_list[0])
+            props["theta"].append(theta_list[0])
+            traces.append(go.Scatterpolar(props))
+        else:
+            traces.append(go.Barpolar(props))
 
     # Compute the maximum extent of any particular
     # petal on the wind rose.
