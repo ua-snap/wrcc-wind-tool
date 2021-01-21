@@ -231,6 +231,8 @@ def process_calms(stations, roses, calms_fp):
 
     # filter stations to only those in roses
     stations = stations[stations["sid"].isin(roses["sid"].unique())]
+    # drop gusts column, discard obs with NaN in direction or speed
+    stations = stations.drop(columns="gust_mph").dropna()
     # Create temporary structure which holds
     # total wind counts and counts where calm to compute
     # % of calm measurements.
@@ -238,20 +240,19 @@ def process_calms(stations, roses, calms_fp):
     # keep rows where speed == 0 (calm)
     d = stations[(stations["ws"] == 0)]
     d = d.groupby(["sid", "decade"]).size().reset_index()
-    calms = calms.assign(calm=d[[0]])
+    calms = calms.merge(d, on=["sid", "decade"])
     calms.columns = ["sid", "decade", "total", "calm"]
     calms = calms.assign(percent=round(calms["calm"] / calms["total"], 3) * 100)
     # remove remaining decades not present in station roses data
     sid_decades = roses["sid"] + roses["decade"]
     calms = calms[(calms["sid"] + calms["decade"]).isin(sid_decades)]
     # pickle it
-    calms_fp = "data/calms.pickle"
     calms.to_pickle(calms_fp)
 
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
     print(f"Calms data for wind roses saved to {calms_fp}")
 
-    return calms_fp
+    return calms
 
 
 def crosswind_component(ws, wd, d=0):
