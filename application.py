@@ -23,6 +23,9 @@ calms = pd.read_pickle(base_dir.joinpath("calms.pickle"))
 exceedance = pd.read_pickle(base_dir.joinpath("crosswind_exceedance.pickle"))
 mean_wep = pd.read_pickle(base_dir.joinpath("mean_wep.pickle"))
 
+# separate rose data for different sections
+sxs_roses = roses[roses["decade"] != "none"]
+
 # We set the requests_pathname_prefix to enable
 # custom URLs.
 # https://community.plot.ly/t/dash-error-loading-layout/8139/6
