@@ -279,18 +279,21 @@ def update_rose(community):
 # function to check sufficient data for side-by-side and diff? Need a invisible placeholder in the gui?
 # This function should return the filtered data, so it can be used by both sxs rose and diff rose
 @app.callback(
-    Output("comparison-rose-data", "value"), [Input("communities-dropdown", "value")]
+    Output("comparison-rose-data", "value"),
+    [Input("communities-dropdown", "value"), Input("rose-coarse", "value")],
 )
-def get_comparison_data(sid):
+def get_comparison_data(sid, coarse):
     """Prep data that will be used in the side-by-side roses and 
     the difference polar line chart
     """
     station_name = luts.communities.loc[sid]["place"]
-    station_roses = roses.loc[roses["sid"] == sid]
+    station_roses = sxs_roses.loc[
+        (sxs_roses["sid"] == sid) & (sxs_roses["coarse"] == coarse)
+    ]
     # available decades for particular station
     available_decades = station_roses["decade"].unique()
     # if none, return blank template plot
-    if len(available_decades) == 0:
+    if (len(available_decades) == 0) or ("2010-2019" not in available_decades):
         # if insufficient data, return empty trace dict
         return {
             "trace_dict": {
@@ -342,9 +345,12 @@ def get_comparison_data(sid):
 
 
 # @app.callback(Output("rose_sxs", "figure"), [Input("communities-dropdown", "value")])
-@app.callback(Output("rose_sxs", "figure"), [Input("comparison-rose-data", "value")])
+@app.callback(
+    Output("rose_sxs", "figure"),
+    [Input("comparison-rose-data", "value"), Input("units_selector", "value")],
+)
 # def update_rose_sxs(sid):
-def update_rose_sxs(rose_dict):
+def update_rose_sxs(rose_dict, units):
     """
     Create side-by-side (sxs) plot of wind roses from different decades
     """
@@ -450,7 +456,7 @@ def update_rose_sxs(rose_dict):
     for df, show_legend, i in zip(data_list, [True, False], [1, 2]):
         traces = []
         max_axes = max_axes.append(
-            get_rose_traces(df, traces, show_legend), ignore_index=True
+            get_rose_traces(df, traces, units, show_legend), ignore_index=True
         )
         _ = [fig.add_trace(trace, row=1, col=i) for trace in traces]
 
@@ -486,8 +492,11 @@ def update_rose_sxs(rose_dict):
     return fig
 
 
-@app.callback(Output("rose_diff", "figure"), [Input("comparison-rose-data", "value")])
-def update_diff_rose(rose_dict):
+@app.callback(
+    Output("rose_diff", "figure"),
+    [Input("comparison-rose-data", "value"), Input("units_selector", "value")],
+)
+def update_diff_rose(rose_dict, units):
     """Generate difference wind rose by taking difference in 
     frequencies of speed/direction bins
     """
@@ -548,7 +557,7 @@ def update_diff_rose(rose_dict):
     rose_data["frequency"] = data_list[1]["frequency"] - rose_data["frequency"]
 
     traces = []
-    get_rose_traces(rose_data, traces, True, True)
+    get_rose_traces(rose_data, traces, units, True, True)
 
     station_calms = pd.DataFrame(rose_dict["calms_dict"])
     # compute calm difference
