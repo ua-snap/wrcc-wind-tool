@@ -163,13 +163,35 @@ def process_roses(stations, ncpus, roses_fp):
         filepath where pre-processed wind rose data was saved
 
     """
-    print("Preprocessing wind rose frequency counts", end="...")
+    print("Preprocessing wind rose frequency counts.")
     tic = time.perf_counter()
 
     # drop gusts column, discard obs with NaN in direction or speed
     stations = stations.drop(columns="gust_mph").dropna()
-    # filter out stations where first obs is younger than 1991-01-01
+
+    # first process roses for all available stations - that is, stations
+    # with data at least as old as 2010-01-01 
     min_ts = stations.groupby("sid")["ts"].min()
+    keep_sids = min_ts[min_ts < pd.to_datetime("2010-06-01")].index.values
+    # stations to be used in the summary
+    summary_stations = stations[stations["sid"].isin(keep_sids)].copy()
+     # Set the decade column to "none" to indicate these are for all available data
+    summary_stations["decade"] = "none"
+    # create summary rose data
+    # break out into df by station for multithreading
+    station_dfs = [df for sid, df in summary_stations.groupby("sid")]
+    # drop calms
+    station_dfs = [df[df["wd"] != 0].reset_index(drop=True) for df in station_dfs]
+    with Pool(ncpus) as pool:
+        rose_dfs = pool.map(chunk_to_rose, station_dfs)
+
+    summary_roses = pd.concat(rose_dfs)
+
+    print(f"Summary roses done, {round(time.perf_counter() - tic, 2)}s.")
+    tic = time.perf_counter()
+
+    # now focus on rose data for stations that will allow wind rose comparison
+    # filter out stations where first obs is younger than 1991-01-01
     keep_sids = min_ts[min_ts < pd.to_datetime("1991-01-01")].index.values
     stations = stations[stations["sid"].isin(keep_sids)]
 
@@ -205,28 +227,22 @@ def process_roses(stations, ncpus, roses_fp):
     # again, remove station / decade combos lacking sufficient data
     station_dfs = [df[0] for df, keep in zip(station_dfs, keep_list) if keep]
 
-    # suff_sids = [df.sid.unique()[0] for df in station_dfs]
-    # suff_sids2 = []
-    # for sid in suff_sids:
-    #     if sid not in suff_sids2:
-    #         suff_sids2.append(sid)
-    # print(f"sufficient overall data: {suff_sids2} \n")
-    # print(len(suff_sids2))
-
     # remaining station / decades have sufficient data for chunking to rose
     # filter out calms
     station_dfs = [df[df["wd"] != 0].reset_index(drop=True) for df in station_dfs]
     with Pool(ncpus) as pool:
         rose_dfs = pool.map(chunk_to_rose, station_dfs)
 
-    roses = pd.concat(rose_dfs)
+    compare_roses = pd.concat(rose_dfs)
+    roses = pd.concat([summary_roses, compare_roses])
+
     # concat and pickle it
     roses.to_pickle(roses_fp)
 
-    print(f"done, {round(time.perf_counter() - tic, 2)}s")
+    print(f"Comparison roses done, {round(time.perf_counter() - tic, 2)}s.")
     print(f"Preprocessed data for wind roses written to {roses_fp}")
 
-    return roses_fp
+    return roses
 
 
 def process_calms(stations, roses, calms_fp):
