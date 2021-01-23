@@ -11,27 +11,6 @@ from multiprocessing import Pool
 from pathlib import Path
 
 
-def process_stations(stations, prepped_fp):
-    """Prepare data for more specific graphic pre-processing.  
-
-    Args:
-        df (DataFrame): Data frame of all hourly raw data from stations
-
-    Returns:
-        Stations DataFrame prepared for further preprocessing
-
-    """
-    # add decade column for aggregating
-    for dyear in decades:
-        dyears = list(range(dyear, dyear + 10))
-        stations.loc[stations["ts"].dt.year.isin(dyears), "decade"] = decades[dyear]
-
-    # Not sure what else to include in this function as of now.
-    stations.to_pickle(prepped_fp)
-
-    return stations
-
-
 def check_sufficient_data(station, prelim=True, r1=0.25, r2=0.75):
     """Check presence of sufficient hourly time series data 
     against some thresholds
@@ -211,10 +190,6 @@ def process_roses(stations, ncpus, roses_fp):
     # Remove the stations lacking sufficient 90s data
     station_dfs = [df for df, keep in zip(station_dfs, keep_list) if keep]
 
-    # suff_sids = [df.sid.unique()[0] for df in station_dfs]
-    # print(f"\nsufficient 90s data: {suff_sids} \n")
-    # print(len(suff_sids))
-
     # break worthy stations up by decade
     # pass "False" for prelim arg to avoid filtering on 1990's
     station_dfs = [
@@ -390,13 +365,6 @@ if __name__ == "__main__":
         help="Number of cores to use with multiprocessing",
     )
     parser.add_argument(
-        "-s",
-        "--stations",
-        action="store_true",
-        dest="stations",
-        help="Pre-process (gather) station data",
-    )
-    parser.add_argument(
         "-r",
         "--roses",
         action="store_true",
@@ -426,7 +394,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     ncpus = args.ncpus
-    do_stations = args.stations
     do_roses = args.roses
     do_calms = args.calms
     do_crosswinds = args.crosswinds
@@ -436,13 +403,7 @@ if __name__ == "__main__":
 
     # gather station data into single file
     print("Reading data")
-    prepped_fp = base_dir.joinpath("stations_prepped.pickle")
-    if do_stations:
-        # stations = process_stations("data/asos", ncpus)
-        stations = pd.read_pickle(base_dir.joinpath("stations.pickle"))
-        stations = process_stations(stations, prepped_fp)
-    else:
-        stations = pd.read_pickle(prepped_fp)
+    stations = pd.read_pickle(base_dir.joinpath("stations.pickle"))
 
     roses_fp = base_dir.joinpath("roses.pickle")
     if do_roses:
