@@ -47,7 +47,8 @@ def check_sufficient_data(station, prelim=True, r1=0.25, r2=0.75):
         proportion of days; otherwise, False
 
     """
-    # This is done to test if a station should even be considered for wind rose processing
+    # This is done to test if a station should even be considered for the 
+    # comparison wind rose processing
     if prelim:
         station = station[station["decade"] == "1990-1999"]
     # if no 90s data, return False to ignore
@@ -72,9 +73,9 @@ def chunk_to_rose(station):
     Return accumulator of whatever the results of the
     incoming chunk are.
     """
-    # Bin into 36 categories.
-    bins = list(range(5, 356, 10))
-    bin_names = list(range(1, 36))
+    # if coarse, bin into 8 categories, 36 otherwise
+    bin_list = [list(range(5, 356, 10)), list(np.arange(22.5, 337.5, 45))]
+    bname_list = [list(range(1, 36)), list(np.arange(4.5, 31.5, 4.5))]
 
     # Accumulator dataframe.
     proc_cols = [
@@ -84,48 +85,57 @@ def chunk_to_rose(station):
         "count",
         "frequency",
         "decade",
+        "coarse",
     ]
     accumulator = pd.DataFrame(columns=proc_cols)
 
-    # Assign directions to bins.
-    # We'll use the exceptional 'NaN' class to represent
-    # 355º - 5º, which would otherwise be annoying.
-    # Assign 0 to that direction class.
-    ds = pd.cut(station["wd"], bins, labels=bin_names)
-    station = station.assign(direction_class=ds.cat.add_categories("0").fillna("0"))
+    for bins, bin_names, coarse in zip(bin_list, bname_list, [False, True]):
+        # Assign directions to bins.
+        # We'll use the exceptional 'NaN' class to represent
+        # 355º - 5º, which would otherwise be annoying.
+        # Assign 0 to that direction class.
+        ds = pd.cut(station["wd"], bins, labels=bin_names)
+        station = station.assign(direction_class=ds.cat.add_categories("0").fillna("0"))
 
-    # First compute yearly data.
-    # For each direction class...
-    directions = station.groupby(["direction_class"])
-    for direction, d_group in directions:
+        # First compute yearly data.
+        # For each direction class...
+        directions = station.groupby(["direction_class"])
+        for direction, d_group in directions:
 
-        # For each wind speed range bucket...
-        for bucket, bucket_info in speed_ranges.items():
-            d = d_group.loc[
-                (
-                    station["ws"].between(
-                        bucket_info["range"][0], bucket_info["range"][1], inclusive=True
+            # For each wind speed range bucket...
+            for bucket, bucket_info in speed_ranges.items():
+                d = d_group.loc[
+                    (
+                        station["ws"].between(
+                            bucket_info["range"][0], bucket_info["range"][1], inclusive=True
+                        )
+                        == True
                     )
-                    == True
-                )
-            ]
-            count = len(d.index)
-            full_count = len(station.index)
-            frequency = 0
-            if full_count > 0:
-                frequency = round(((count / full_count) * 100), 2)
+                ]
+                count = len(d.index)
+                full_count = len(station.index)
+                frequency = 0
+                if full_count > 0:
+                    frequency = round(((count / full_count) * 100), 2)
 
-            accumulator = accumulator.append(
-                {
-                    "sid": station["sid"].values[0],
-                    "direction_class": direction,
-                    "speed_range": bucket,
-                    "count": count,
-                    "frequency": frequency,
-                    "decade": station["decade"].iloc[0],
-                },
-                ignore_index=True,
-            )
+                accumulator = accumulator.append(
+                    {
+                        "sid": station["sid"].values[0],
+                        "direction_class": direction,
+                        "speed_range": bucket,
+                        "count": count,
+                        "frequency": frequency,
+                        "decade": station["decade"].iloc[0],
+                        "coarse": coarse,
+                    },
+                    ignore_index=True,
+                )
+
+    accumulator = accumulator.astype({
+        "direction_class": np.float32,
+        "count": np.int32,
+        "frequency": np.float32,
+    })
 
     return accumulator
 
