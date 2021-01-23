@@ -307,11 +307,12 @@ columns = wrap_in_section(
                                             ),
                                             dcc.Markdown(
                                                 """
-    These boxplots display the averaged quantiles over span of available data. 
+Use this box-plot to explore the seasonal changes in wind energy potential. Each month's average wind energy values are averaged over the period of available data.
 
-     * **Spokes** in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).
-     * **Colors** within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.
-     * **Size of the center** hole indicates the &percnt; of calm winds.
+* **Boxes** show the middle 50&percnt; of monthly averages.
+* **Horizontal lines within boxes** show averages based on all hourly reports for a month.
+* **Whiskers** (vertical lines above and below boxes) represent the full ranges of typical variation of monthly averages for the different years, extended to the minimum and maximum points contained within 1.5 of the interquartile range (IQR, which is the height of the box shown).
+* **Dots** indicate outliers, or individual values outside the normal variation (1.5 IQR).
          """,                               )
                                         ],
                                     ),

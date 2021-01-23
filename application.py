@@ -21,7 +21,7 @@ base_dir = Path(os.getenv("BASE_DIR"))
 roses = pd.read_pickle(base_dir.joinpath("roses.pickle"))
 calms = pd.read_pickle(base_dir.joinpath("calms.pickle"))
 exceedance = pd.read_pickle(base_dir.joinpath("crosswind_exceedance.pickle"))
-wep_quantiles = pd.read_pickle(base_dir.joinpath("wep_box_data.pickle"))
+mean_wep = pd.read_pickle(base_dir.joinpath("mean_wep.pickle"))
 
 # We set the requests_pathname_prefix to enable
 # custom URLs.
@@ -596,23 +596,23 @@ def update_diff_rose(rose_dict):
 
 
 @app.callback(Output("wep_box", "figure"), [Input("communities-dropdown", "value")])
-def update_box_plots(community):
+def update_box_plots(sid):
     """ Generate box plot for monthly averages """
 
-    d = wep_quantiles.loc[(wep_quantiles["sid"] == community)]
-    c_name = luts.communities.loc[community]["place"]
+    d = mean_wep.loc[(mean_wep["sid"] == sid)]
+    c_name = luts.communities.loc[sid]["place"]
 
     return go.Figure(
         layout=dict(
             font=dict(family="Open Sans", size=10),
             title=dict(
-                text="Wind energy potential (speed cubed, currently) for " + c_name,
+                text="Average monthly wind energy potential for " + c_name,
                 font=dict(size=18, family="Open Sans"),
                 x=0.5,
             ),
             boxmode="group",
             yaxis={
-                "title": "Cube of wind speed (mph)",
+                "title": "Wind energy potential (W/m2)",
                 "rangemode": "tozero",
                 "fixedrange": True,
             },
@@ -630,7 +630,8 @@ def update_box_plots(community):
                 fillcolor=luts.speed_ranges["10-14"]["color"],
                 x=d.month,
                 y=d.wep,
-                hovertemplate="%{x} %{y} mph",
+                meta=d.year,
+                hovertemplate="%{x} %{meta}: %{y} W/m2",
                 marker=dict(color=luts.speed_ranges["22+"]["color"]),
                 line=dict(color=luts.speed_ranges["22+"]["color"]),
             )
