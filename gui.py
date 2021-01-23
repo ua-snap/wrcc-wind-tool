@@ -76,7 +76,7 @@ intro = wrap_in_section(
                         className="survey-link",
                         children=[
                             html.P(
-                                "Intro text.",
+                                "",
                                 className="content is-size-4",
                             ),
                             html.A(
@@ -122,7 +122,7 @@ form_fields = html.Div(
     children=[
         dcc.Markdown(
             """
-            Explore past wind data from airports in Alaska. Start by choosing a specific airport.
+            Explore past wind data from airport weather stations in Alaska. Start by choosing a specific airport.
 """,
             className="content is-size-5",
         ),
@@ -141,61 +141,6 @@ form_fields = html.Div(
         ),
     ],
 )
-
-# form_elements_section = wrap_in_section(
-#     html.Div(
-#         children=[
-#             html.H2("Common form elements", className="title is-2"),
-#             html.H4(
-#                 "These examples can be copy/pasted where appropriate.",
-#                 className="subtitle is-4",
-#             ),
-#             html.Div(
-#                 className="columns",
-#                 children=[
-#                     html.Div(
-#                         className="column",
-#                         children=[
-#                             html.Div(
-#                                 children=[
-#                                     # html.Div(
-#                                     #     className="section",
-#                                     #     children=[html.A(id="toc_location"), form_fields],
-#                                     # ),
-#                                     html.Div(
-#                                         className="section",
-#                                         children=[
-#                                             # html.A(id="toc_g2"),
-#                                             html.H3(
-#                                                 "Annual wind speed/direction",
-#                                                 className="title is-4 title--rose",
-#                                             ),
-#                                             dcc.Markdown(
-#                                                 """
-#     This wind rose shows prevailing wind direction and speed for a given location. Data show annual trends averaged over 35 years of observations (1980&ndash;2014).
-
-#      * **Spokes** in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).
-#      * **Colors** within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.
-#      * **Size of the center** hole indicates the &percnt; of calm winds.
-#          """,
-#                                                 className="content is-size-6",
-#                                             ),
-#                                             dcc.Graph(
-#                                                 id="rose",
-#                                                 figure=go.Figure(),
-#                                                 config=luts.fig_configs,
-#                                             ),
-#                                         ],
-#                                     ),
-#                                 ]
-#                             )
-#                         ]
-#                     ),
-#                 ],
-#             ),
-#         ],
-#     )
-# )
 
 help_text = html.Div(
     className="section",
@@ -228,12 +173,54 @@ help_text = html.Div(
     ],
 )
 
+units_radios_field = html.Div(
+    className="Field",
+    children=[
+        html.Label("Wind speed units", className="label"),
+        # Position this text better?
+        # dcc.Markdown(
+        #     "Set the units used for displaying wind speed data.", 
+        #     className="is-size-10 content"
+        # ),
+        dcc.RadioItems(
+            id="units_selector",
+            labelClassName="radio",
+            className="control",
+            options=[
+                {"label": "knots", "value": "kts"},
+                {"label": "mph", "value": "mph"},
+                {"label": "m/s", "value": "m/s"},
+            ],
+            value="kts",
+        )
+    ],
+)
 
-
+rose_res_radios_field = html.Div(
+    className="Field",
+    children=[
+        html.Label("Wind rose display", className="label"),
+        # Position this text better with CSS?
+        # dcc.Markdown(
+        #     "", 
+        #     className="is-size-10 content"
+        # ),
+        dcc.RadioItems(
+            id="rose-coarse",
+            labelClassName="radio",
+            className="control",
+            options=[
+                {"label": "fine", "value": False},
+                {"label": "coarse", "value": True},
+            ],
+            value=False,
+        )
+    ],
+)
 
 columns = wrap_in_section(
     html.Div(
-        # className="section charts",
+        className="section charts",
         children=[
             html.Div(
                 className="columns",
@@ -251,8 +238,29 @@ columns = wrap_in_section(
                                     html.Div(
                                         className="section",
                                         children=[
+                                            html.A(id="toc_g1"),
+                                            html.H3(
+                                                "Station summary",
+                                                className="title is-4",
+                                            ),
+                                            dcc.Markdown(
+                                            """
+This section provides an overview of the data vailable for the selected station.
+ """,
+                                                className="content is-size-6",
+                                            ),
+                                            # Put summary of available data here
+                                            units_radios_field,
+                                            rose_res_radios_field,
+                                        ]
+                                    ),
+
+                                    html.Div(
+                                        className="section",
+                                        children=[
                                             html.A(id="toc_g2"),
                                             # maybe reorganize?
+
                                             # Better title: allowable crosswind component exceedance profile
                                             html.H3(
                                                 "Crosswind component calculation",
@@ -263,6 +271,11 @@ columns = wrap_in_section(
                                                 figure=go.Figure(),
                                                 config=luts.fig_configs,
                                             ),
+                                        ]
+                                    ),
+                                    html.Div(
+                                        className="section",
+                                        children=[
                                             html.H3(
                                                 "Historical wind speed/direction comparison",
                                                 className="title is-4 title--rose",
