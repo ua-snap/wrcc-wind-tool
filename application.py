@@ -156,7 +156,46 @@ def get_rose_calm_sxs_annotations(titles, calm):
     return calm_annotations
 
 
-def get_rose_traces(d, traces, showlegend=False, lines=False):
+@app.callback(
+    Output("exceedance_plot", "figure"),
+    [Input("communities-dropdown", "value"), Input("units_selector", "value")],
+)
+def update_exceedance_plot(sid, units):
+    """Plot line chart of allowable crosswind threshold exceedance"""
+    df = exceedance.loc[exceedance["sid"] == sid]
+
+    station_name = luts.communities.loc[sid]["place"]
+    title = f"Runway direction vs allowable crosswind exceedance, {station_name}"
+    fig = px.line(
+        df,
+        x="direction",
+        y="exceedance",
+        color="threshold",
+        title=title,
+        labels={
+            "direction": "Runway direction (degrees)",
+            "exceedance": "Exceedance frequency (%)",
+            "threshold": "Threshold",
+        },
+    )
+    fig.update_layout(
+        {
+            "plot_bgcolor": "rgba(0, 0, 0, 0)",
+            "yaxis.gridcolor": "black",
+            "yaxis.showline": True,
+            "yaxis.linecolor": "black",
+            "xaxis.showline": True,
+            "xaxis.linecolor": "black",
+        }
+    )
+
+    for i in [0, 1, 2]:
+        fig["data"][i]["name"] = luts.exceedance_units[units][fig["data"][i]["name"]]
+
+    return fig
+
+
+def get_rose_traces(d, traces, units, showlegend=False, lines=False):
     """
     Get all traces for a wind rose, given the data chunk.
     Month is used to tie the subplot to the formatting
@@ -165,13 +204,17 @@ def get_rose_traces(d, traces, showlegend=False, lines=False):
 
     # Directly mutate the `traces` array.
     for sr, sr_info in luts.speed_ranges.items():
+        if units in ["kts", "m/s"]:
+            name = f"{luts.speed_units[units][sr]} {units}"
+        else:
+            name = sr + " mph"
         dcr = d.loc[(d["speed_range"] == sr)]
         r_list = dcr["frequency"].tolist()
         theta_list = list(pd.to_numeric(dcr["direction_class"]) * 10)
         props = dict(
             r=r_list,
             theta=theta_list,
-            name=sr + " mph",
+            name=name,
             hovertemplate="%{r} %{fullData.name} winds from %{theta}<extra></extra>",
             marker_color=sr_info["color"],
             showlegend=showlegend,
@@ -182,6 +225,9 @@ def get_rose_traces(d, traces, showlegend=False, lines=False):
             # append first item of each to close the lines
             props["r"].append(r_list[0])
             props["theta"].append(theta_list[0])
+            props[
+                "hovertemplate"
+            ] = "%{r} change in %{fullData.name}<br>winds from %{theta}<extra></extra>"
             traces.append(go.Scatterpolar(props))
         else:
             traces.append(go.Barpolar(props))
@@ -191,20 +237,6 @@ def get_rose_traces(d, traces, showlegend=False, lines=False):
     max_petal = d.groupby(["direction_class"]).sum().max()
 
     return max_petal
-
-
-@app.callback(
-    Output("exceedance_plot", "figure"), [Input("communities-dropdown", "value")]
-)
-def update_exceedance_plot(community):
-    """Plot line chart of allowable crosswind threshold exceedance"""
-    df = exceedance.loc[exceedance["sid"] == community]
-
-    title = "Test Allowable crosswind component exceedance"
-    fig = px.line(df, x="direction", y="exceedance", color="threshold", title=title)
-    fig.update_layout({"plot_bgcolor": "rgba(0, 0, 0, 0)", "yaxis.gridcolor": "black"})
-
-    return fig
 
 
 @app.callback(Output("rose", "figure"), [Input("communities-dropdown", "value")])
