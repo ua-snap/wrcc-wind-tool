@@ -346,26 +346,10 @@ def process_crosswinds(stations, ncpus, exceedance_fp):
     return crosswinds
 
 
-def compute_wep_box(station):
-
-    station["wep"] = np.round(station["ws"].astype(np.float32) ** 3, 2)
-    # hack to create boxplots from summarized data
-    quantiles = [0.05, 0.25, 0.25, 0.5, 0.75, 0.75, 0.95]
-    quantiles_list = [(np.round(station.groupby(["year", "month"])["wep"].quantile(q), 2), q)
-                for q in quantiles]
-    quantiles_used = [q for i in quantiles_list for q in np.repeat(i[1], len(i[0].index))]
-    wep_quantiles = pd.DataFrame(pd.concat([i[0] for i in quantiles_list])).reset_index()
-    # add quantile value for aggregating
-    wep_quantiles["quantile"] = quantiles_used
-    wep_quantiles = wep_quantiles.groupby(["month", "quantile"])["wep"].mean().reset_index()
-    wep_quantiles["sid"] = station["sid"].values[0]
-
-    return wep_quantiles
-
-
-def process_wep(stations, ncpus, wep_quantiles_fp):
+def process_wep(stations, mean_wep_fp):
     """Process wind energy potential"""
-    print(f"Preprocessing weind energy potential using {ncpus} cores", end="...")
+    # print(f"Preprocessing weind energy potential using {ncpus} cores", end="...")
+    print(f"Preprocessing wind energy potential", end="...")
     tic = time.perf_counter()
 
     # drop gusts column, discard obs with NaN in direction or speed
@@ -377,17 +361,19 @@ def process_wep(stations, ncpus, wep_quantiles_fp):
     stations["month"] = stations["ts"].dt.month
     stations["year"] = stations["ts"].dt.year
 
-    # this may not be more efficient than the multilevel groupby, explore later
-    station_dfs = [df for sid, df in stations.groupby("sid")]
-    with Pool(ncpus) as pool:
-        wep_quantiles = pd.concat(pool.map(compute_wep_box, station_dfs))
+    rho = 1.23
+    stations["wep"] = 0.5 * rho * (stations["ws"].astype(np.float32) / 2.237) ** 3
+    wep = stations.drop(columns=["ws", "wd"])
+    mean_wep = wep.groupby(["sid", "year", "month"]).mean().reset_index()
+    mean_wep["wep"] = np.round(mean_wep["wep"])
+    mean_wep = mean_wep.astype({"year": "int16", "month": "int16"})
 
-    wep_quantiles.to_pickle(wep_quantiles_fp)
+    mean_wep.to_pickle(mean_wep_fp)
 
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
-    print(f"Wind energy potential box plot data saved to {wep_quantiles_fp}")
+    print(f"Wind energy potential box plot data saved to {mean_wep_fp}")
 
-    return wep_quantiles
+    return mean_wep
 
 
 if __name__ == "__main__":
@@ -473,5 +459,5 @@ if __name__ == "__main__":
         crosswinds = process_crosswinds(stations, ncpus, exceedance_fp)
 
     if do_wep:
-        wep_quantiles_fp = base_dir.joinpath("wep_box_data.pickle")
-        wep = process_wep(stations, ncpus, wep_quantiles_fp)
+        wep_quantiles_fp = base_dir.joinpath("mean_wep.pickle")
+        wep = process_wep(stations, wep_quantiles_fp)
