@@ -143,7 +143,7 @@ when the page is loading.
     height: 400px;
 }
 #exceedance_plot {
-    max-width: 700px;
+    max-width: 970px;
     height: 500px;
 }
 #rose {
@@ -157,6 +157,9 @@ when the page is loading.
 #rose_diff {
     max-width: 1000px;
     height: 800px;
+}
+#wep_box {
+    max-width: 1000px;
 }
 #threshold_graph {
     max-width: 970px;
