@@ -25,6 +25,7 @@ mean_wep = pd.read_pickle(base_dir.joinpath("mean_wep.pickle"))
 
 # separate rose data for different sections
 sxs_roses = roses[roses["decade"] != "none"]
+roses = roses[roses["decade"] != "none"]
 
 # We set the requests_pathname_prefix to enable
 # custom URLs.
@@ -366,7 +367,7 @@ def get_comparison_data(sid, coarse):
     # Generate calms.  Subset by community, re-index
     # for easy access, preprocess percent hole size,
     # drop unused columns.
-    station_calms = calms[calms["sid"] == sid].reset_index()
+    station_calms = calms.loc[(calms["sid"] == sid) & (calms["decade"] != "none")].reset_index()
     station_calms = station_calms.reset_index()
     station_calms = station_calms.assign(percent=station_calms["percent"] / 100)
 
@@ -378,7 +379,6 @@ def get_comparison_data(sid, coarse):
     }
 
 
-# @app.callback(Output("rose_sxs", "figure"), [Input("communities-dropdown", "value")])
 @app.callback(
     Output("rose_sxs", "figure"),
     [Input("comparison-rose-data", "value"), Input("units_selector", "value")],

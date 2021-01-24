@@ -26,7 +26,7 @@ def check_sufficient_data(station, prelim=True, r1=0.25, r2=0.75):
         proportion of days; otherwise, False
 
     """
-    # This is done to test if a station should even be considered for the 
+    # This is done to test if a station should even be considered for the
     # comparison wind rose processing
     if prelim:
         station = station[station["decade"] == "1990-1999"]
@@ -86,7 +86,9 @@ def chunk_to_rose(station):
                 d = d_group.loc[
                     (
                         station["ws"].between(
-                            bucket_info["range"][0], bucket_info["range"][1], inclusive=True
+                            bucket_info["range"][0],
+                            bucket_info["range"][1],
+                            inclusive=True,
                         )
                         == True
                     )
@@ -110,11 +112,9 @@ def chunk_to_rose(station):
                     ignore_index=True,
                 )
 
-    accumulator = accumulator.astype({
-        "direction_class": np.float32,
-        "count": np.int32,
-        "frequency": np.float32,
-    })
+    accumulator = accumulator.astype(
+        {"direction_class": np.float32, "count": np.int32, "frequency": np.float32,}
+    )
 
     return accumulator
 
@@ -149,12 +149,12 @@ def process_roses(stations, ncpus, roses_fp):
     stations = stations.drop(columns="gust_mph").dropna()
 
     # first process roses for all available stations - that is, stations
-    # with data at least as old as 2010-01-01 
+    # with data at least as old as 2010-01-01
     min_ts = stations.groupby("sid")["ts"].min()
     keep_sids = min_ts[min_ts < pd.to_datetime("2010-06-01")].index.values
     # stations to be used in the summary
     summary_stations = stations[stations["sid"].isin(keep_sids)].copy()
-     # Set the decade column to "none" to indicate these are for all available data
+    # Set the decade column to "none" to indicate these are for all available data
     summary_stations["decade"] = "none"
     # create summary rose data
     # break out into df by station for multithreading
@@ -234,16 +234,39 @@ def process_calms(stations, roses, calms_fp):
     stations = stations[stations["sid"].isin(roses["sid"].unique())]
     # drop gusts column, discard obs with NaN in direction or speed
     stations = stations.drop(columns="gust_mph").dropna()
+
+    # first, process calms for all available stations
     # Create temporary structure which holds
     # total wind counts and counts where calm to compute
     # % of calm measurements.
-    calms = stations.groupby(["sid", "decade"]).size().reset_index()
+    calms = stations.groupby("sid").size().reset_index()
     # keep rows where speed == 0 (calm)
     d = stations[(stations["ws"] == 0)]
-    d = d.groupby(["sid", "decade"]).size().reset_index()
-    calms = calms.merge(d, on=["sid", "decade"])
-    calms.columns = ["sid", "decade", "total", "calm"]
+    d = d.groupby("sid").size().reset_index()
+    calms = calms.merge(d, on="sid")
+    calms.columns = ["sid", "total", "calm"]
     calms = calms.assign(percent=round(calms["calm"] / calms["total"], 3) * 100)
+    calms["decade"] = "none"
+    # re-order to for concat below
+    calms = calms[["sid", "decade", "total", "calm", "percent"]]
+
+    # repeat for comparison rose calms (include decade grouping)
+    # filter stations to those with comparison rose data
+    compare_sids = roses.loc[roses["decade"] == "2010-2019"]["sid"].unique()
+    stations = stations[stations["sid"].isin(compare_sids)]
+    compare_calms = stations.groupby(["sid", "decade"]).size().reset_index()
+    # keep rows where speed == 0 (calm)
+    compare_d = stations[(stations["ws"] == 0)]
+    compare_d = compare_d.groupby(["sid", "decade"]).size().reset_index()
+    compare_calms = compare_calms.merge(compare_d, on=["sid", "decade"])
+    compare_calms.columns = ["sid", "decade", "total", "calm"]
+    compare_calms = compare_calms.assign(
+        percent=round(compare_calms["calm"] / compare_calms["total"], 3) * 100
+    )
+
+    # concat the two calms data sources together
+    calms = pd.concat([calms, compare_calms])
+
     # remove remaining decades not present in station roses data
     sid_decades = roses["sid"] + roses["decade"]
     calms = calms[(calms["sid"] + calms["decade"]).isin(sid_decades)]
@@ -391,7 +414,7 @@ if __name__ == "__main__":
         action="store_true",
         dest="wep",
         help="Pre-process wind energy potential data",
-    )
+    ),
     args = parser.parse_args()
     ncpus = args.ncpus
     do_roses = args.roses
@@ -422,3 +445,5 @@ if __name__ == "__main__":
     if do_wep:
         wep_quantiles_fp = base_dir.joinpath("mean_wep.pickle")
         wep = process_wep(stations, wep_quantiles_fp)
+
+    # read and filter places data to match airports available
