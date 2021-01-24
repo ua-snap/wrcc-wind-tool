@@ -5,8 +5,38 @@ import os
 import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
+from pathlib import Path
 
-communities = pd.read_csv("places.csv", index_col="sid")
+base_dir = Path(os.getenv("BASE_DIR"))
+
+# need to get map data ready here first for use in gui
+# need to filter to airports meeting minimum data requirements
+airport_meta = pd.read_csv(base_dir.joinpath("airport_meta.csv"))
+# remove duplicate rows after discarding runway info to have unique locations
+map_data = airport_meta.drop(columns=["rw_name", "rw_heading"]).drop_duplicates()
+# use unique sid values in exceedance df, as it represents the less restrictive filtering
+# of data
+exceedance = pd.read_pickle(base_dir.joinpath("crosswind_exceedance.pickle"))
+map_data = map_data.loc[map_data["sid"].isin(exceedance["sid"].unique())].set_index("sid")
+
+# This trace is shared so we can highlight specific communities.
+map_airports_trace = go.Scattermapbox(
+    lat=map_data.loc[:, "lat"],
+    lon=map_data.loc[:, "lon"],
+    mode="markers",
+    marker={"size": 10, "color": "rgb(80,80,80)"},
+    line={"color": "rgb(0, 0, 0)", "width": 2},
+    text=map_data.real_name,
+    hoverinfo="text",
+)
+
+map_layout = go.Layout(
+    autosize=True,
+    hovermode="closest",
+    mapbox=dict(style="carto-positron", zoom=2.5, center=dict(lat=63, lon=-158)),
+    showlegend=False,
+    margin=dict(l=0, r=0, t=0, b=0),
+)
 
 # Needs to be a numpy array for ease of building relevant
 # strings for some code
@@ -58,37 +88,6 @@ crosswind_thresholds = {
     "A-II and B-II": 13,
     "A-III, B-III, C-I through D-III, D-I through D-III": 16
 }
-
-# For decadal selector, we need a subset of the above!
-decade_selections = {
-    2020: "2020-2039",
-    2040: "2040-2059",
-    2060: "2060-2079",
-    2080: "2080-2099",
-}
-
-# Map of quantiles to bubble pixel size
-bubble_bins = {"least": 10, "some": 20, "middle": 35, "more": 55, "most": 80}
-
-# This trace is shared so we can highlight specific communities.
-map_communities_trace = go.Scattermapbox(
-    lat=communities.loc[:, "latitude"],
-    lon=communities.loc[:, "longitude"],
-    mode="markers",
-    marker={"size": 10, "color": "rgb(80,80,80)"},
-    line={"color": "rgb(0, 0, 0)", "width": 2},
-    text=communities.place,
-    hoverinfo="text",
-)
-
-map_layout = go.Layout(
-    autosize=True,
-    hovermode="closest",
-    mapbox=dict(style="carto-positron", zoom=2.5, center=dict(lat=63, lon=-158)),
-    showlegend=False,
-    margin=dict(l=0, r=0, t=0, b=0),
-)
-
 
 # Common configuration for graph figures
 fig_download_configs = dict(filename="winds", width="1280", scale=2)

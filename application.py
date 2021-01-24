@@ -54,26 +54,26 @@ app.index_string = f"""
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <!-- Schema.org markup for Google+ -->
-        <meta itemprop="name" content="Alaska Community Wind Tool">
-        <meta itemprop="description" content="Explore historical wind data for Alaska communities">
+        <meta itemprop="name" content="WRCC Aviation Wind Tool">
+        <meta itemprop="description" content="Explore historical wind data for Alaska airports">
         <meta itemprop="image" content="http://windtool.accap.uaf.edu/assets/wind-rose.png">
 
         <!-- Twitter Card data -->
         <meta name="twitter:card" content="summary_large_image">
         <meta name="twitter:site" content="@SNAPandACCAP">
-        <meta name="twitter:title" content="Alaska Community Wind Tool">
-        <meta name="twitter:description" content="Explore historical wind data for Alaska communities">
-        <meta name="twitter:creator" content="@SNAPandACCAP">
+        <meta name="twitter:title" content="WRCC Aviation Wind Tool">
+        <meta name="twitter:description" content="Explore historical wind data for Alaska airports">
+        <meta name="twitter:creator" content="@SNAPandWRCC">
         <!-- Twitter summary card with large image must be at least 280x150px -->
         <meta name="twitter:image:src" content="http://windtool.accap.uaf.edu/assets/wind-rose.png">
 
         <!-- Open Graph data -->
-        <meta property="og:title" content="Alaska Community Wind Tool" />
+        <meta property="og:title" content="WRCC Aviation Wind Tool" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="http://windtool.accap.uaf.edu" />
         <meta property="og:image" content="http://windtool.accap.uaf.edu/assets/wind-rose.png" />
-        <meta property="og:description" content="Explore historical wind data for Alaska communities" />
-        <meta property="og:site_name" content="Alaska Community Wind Tool" />
+        <meta property="og:description" content="Explore historical wind data for Alaska airports" />
+        <meta property="og:site_name" content="WRCC Aviation Wind Tool" />
 
         <link rel="alternate" hreflang="en" href="http://windtool.accap.uaf.edu" />
         <link rel="canonical" href="http://windtool.accap.uaf.edu"/>
@@ -94,7 +94,7 @@ app.title = "WRCC Alaska Winds"
 app.layout = layout
 
 
-@app.callback(Output("communities-dropdown", "value"), [Input("map", "clickData")])
+@app.callback(Output("airports-dropdown", "value"), [Input("map", "clickData")])
 def update_place_dropdown(selected_on_map):
     """ If user clicks on the map, update the drop down. """
 
@@ -103,27 +103,27 @@ def update_place_dropdown(selected_on_map):
     # map click handles.
     # TODO look at customdata property here
     if selected_on_map is not None:
-        c = luts.communities[
-            luts.communities["place"] == selected_on_map["points"][0]["text"]
+        c = luts.map_data[
+            luts.map_data["real_name"] == selected_on_map["points"][0]["text"]
         ]
         return c.index.tolist()[0]
     # Return a default
     return "PAFA"
 
 
-@app.callback(Output("map", "figure"), [Input("communities-dropdown", "value")])
-def update_selected_community_on_map(community):
+@app.callback(Output("map", "figure"), [Input("airports-dropdown", "value")])
+def update_selected_airport_on_map(sid):
     """ Draw a second trace on the map with one community highlighted. """
     return {
         "data": [
-            luts.map_communities_trace,
+            luts.map_airports_trace,
             go.Scattermapbox(
-                lat=[luts.communities.loc[community]["latitude"]],
-                lon=[luts.communities.loc[community]["longitude"]],
+                lat=[luts.map_data.loc[sid]["lat"]],
+                lon=[luts.map_data.loc[sid]["lon"]],
                 mode="markers",
                 marker={"size": 20, "color": "rgb(207, 38, 47)"},
                 line={"color": "rgb(0, 0, 0)", "width": 2},
-                text=luts.communities.loc[community]["place"],
+                text=luts.map_data.loc[sid]["real_name"],
                 hoverinfo="text",
             ),
         ],
@@ -158,13 +158,13 @@ def get_rose_calm_sxs_annotations(titles, calm):
 
 @app.callback(
     Output("exceedance_plot", "figure"),
-    [Input("communities-dropdown", "value"), Input("units_selector", "value")],
+    [Input("airports-dropdown", "value"), Input("units_selector", "value")],
 )
 def update_exceedance_plot(sid, units):
     """Plot line chart of allowable crosswind threshold exceedance"""
     df = exceedance.loc[exceedance["sid"] == sid]
 
-    station_name = luts.communities.loc[sid]["place"]
+    station_name = luts.map_data.loc[sid]["real_name"]
     title = f"Runway direction vs allowable crosswind exceedance, {station_name}"
     fig = px.line(
         df,
@@ -239,29 +239,28 @@ def get_rose_traces(d, traces, units, showlegend=False, lines=False):
     return max_petal
 
 
-@app.callback(Output("rose", "figure"), [Input("communities-dropdown", "value")])
-def update_rose(community):
-    """ Generate cumulative wind rose for selected community """
+@app.callback(Output("rose", "figure"), [Input("airports-dropdown", "value"), Input("rose-coarse", "value")])
+def update_rose(sid, coarse):
+    """Generate cumulative wind rose for selected airport"""
+    station_name = luts.map_data.loc[sid]["real_name"]
+    station_rose = roses.loc[
+        (roses["sid"] == sid) & (roses["coarse"] == coarse)
+    ]
+
     traces = []
 
-    # Subset for community & 0=year
-    # d = data.loc[(data["sid"] == community) & (data["month"] == 0)]
-    # month not used in these data, for now
-
-    d = data.loc[data["sid"] == community]
-    get_rose_traces(d, traces, True)
+    get_rose_traces(station_rose, traces, True)
     # Compute % calm, use this to modify the hole size
-    c = calms[calms["sid"] == community]
+    c = calms.loc[(calms["sid"] == sid) & (calms["decade"] == "none")]
     # c_mean = c.mean()
     # c_mean = int(round(c_mean["percent"]))
 
     calm = int(round(c["percent"].values[0]))
 
-    c_name = luts.communities.loc[community]["place"]
-
+    start_year = max(pd.to_datetime(luts.map_data.loc[sid]["begints"]).year, 1980)
     rose_layout = {
         "title": dict(
-            text="Annual Wind Speed/Direction Distribution, 1980-2014, " + c_name,
+            text=f"Wind Speed/Direction Distribution for {station_name}, {start_year}-present",
             font=dict(size=18),
         ),
         "height": 700,
@@ -315,13 +314,13 @@ def update_rose(community):
 # This function should return the filtered data, so it can be used by both sxs rose and diff rose
 @app.callback(
     Output("comparison-rose-data", "value"),
-    [Input("communities-dropdown", "value"), Input("rose-coarse", "value")],
+    [Input("airports-dropdown", "value"), Input("rose-coarse", "value")],
 )
 def get_comparison_data(sid, coarse):
     """Prep data that will be used in the side-by-side roses and 
     the difference polar line chart
     """
-    station_name = luts.communities.loc[sid]["place"]
+    station_name = luts.map_data.loc[sid]["real_name"]
     station_roses = sxs_roses.loc[
         (sxs_roses["sid"] == sid) & (sxs_roses["coarse"] == coarse)
     ]
@@ -429,7 +428,7 @@ def update_rose_sxs(rose_dict, units):
         ),
     )
 
-    station_name = luts.communities.loc[rose_dict["sid"]]["place"]
+    station_name = luts.map_data.loc[rose_dict["sid"]]["real_name"]
 
     layout = {
         "title": dict(
@@ -537,7 +536,7 @@ def update_diff_rose(rose_dict, units):
     """
     # set up layout info first, used in event that selected station lacks
     # sufficient data for comparison
-    station_name = luts.communities.loc[rose_dict["sid"]]["place"]
+    station_name = luts.map_data.loc[rose_dict["sid"]]["real_name"]
 
     rose_layout = {
         "title": dict(text="", font=dict(size=18),),
@@ -639,12 +638,12 @@ def update_diff_rose(rose_dict, units):
     return {"layout": rose_layout, "data": traces}
 
 
-@app.callback(Output("wep_box", "figure"), [Input("communities-dropdown", "value")])
+@app.callback(Output("wep_box", "figure"), [Input("airports-dropdown", "value")])
 def update_box_plots(sid):
     """ Generate box plot for monthly averages """
 
     d = mean_wep.loc[(mean_wep["sid"] == sid)]
-    c_name = luts.communities.loc[sid]["place"]
+    c_name = luts.map_data.loc[sid]["real_name"]
 
     return go.Figure(
         layout=dict(

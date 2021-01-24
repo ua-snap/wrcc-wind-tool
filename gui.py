@@ -14,7 +14,7 @@ path_prefix = os.getenv("REQUESTS_PATHNAME_PREFIX") or "/"
 # before launching into production.
 feedback_toolname = "CHANGE ME"
 
-map_figure = go.Figure(data=luts.map_communities_trace, layout=luts.map_layout)
+map_figure = go.Figure(data=luts.map_airports_trace, layout=luts.map_layout)
 
 # Helper function
 def wrap_in_section(content, section_classes="", container_classes="", div_classes=""):
@@ -95,7 +95,7 @@ intro = wrap_in_section(
     )
 )
 
-communities_dropdown_field = html.Div(
+airports_dropdown_field = html.Div(
     className="field dropdown-selector",
     children=[
         html.Label("Choose a location", className="label"),
@@ -103,10 +103,10 @@ communities_dropdown_field = html.Div(
             className="control",
             children=[
                 dcc.Dropdown(
-                    id="communities-dropdown",
+                    id="airports-dropdown",
                     options=[
-                        {"label": community.place, "value": index}
-                        for index, community in luts.communities.iterrows()
+                        {"label": airport.real_name, "value": index}
+                        for index, airport in luts.map_data.iterrows()
                     ],
                     value="PAFA",
                 ),
@@ -133,7 +133,7 @@ form_fields = html.Div(
 </span> icon in the upper&ndash;right of each chart to download it.</p>
             """
         ),
-        communities_dropdown_field,
+        airports_dropdown_field,
         dcc.Graph(
             id="map",
             figure=map_figure,
@@ -245,13 +245,18 @@ columns = wrap_in_section(
                                             ),
                                             dcc.Markdown(
                                             """
-This section provides an overview of the data vailable for the selected station.
+This section provides a summary of winds observed at the selected station .
  """,
                                                 className="content is-size-6",
                                             ),
                                             # Put summary of available data here
                                             units_radios_field,
                                             rose_res_radios_field,
+                                            dcc.Graph(
+                                                id="rose",
+                                                figure=go.Figure(),
+                                                config=luts.fig_configs,
+                                            ),
                                         ]
                                     ),
 
