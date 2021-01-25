@@ -25,7 +25,7 @@ mean_wep = pd.read_pickle(base_dir.joinpath("mean_wep.pickle"))
 
 # separate rose data for different sections
 sxs_roses = roses[roses["decade"] != "none"]
-roses = roses[roses["decade"] != "none"]
+roses = roses[roses["decade"] == "none"]
 
 # We set the requests_pathname_prefix to enable
 # custom URLs.
@@ -240,13 +240,14 @@ def get_rose_traces(d, traces, units, showlegend=False, lines=False):
     return max_petal
 
 
-@app.callback(Output("rose", "figure"), [Input("airports-dropdown", "value"), Input("rose-coarse", "value")])
+@app.callback(
+    Output("rose", "figure"),
+    [Input("airports-dropdown", "value"), Input("rose-coarse", "value")],
+)
 def update_rose(sid, coarse):
     """Generate cumulative wind rose for selected airport"""
     station_name = luts.map_data.loc[sid]["real_name"]
-    station_rose = roses.loc[
-        (roses["sid"] == sid) & (roses["coarse"] == coarse)
-    ]
+    station_rose = roses.loc[(roses["sid"] == sid) & (roses["coarse"] == coarse)]
 
     traces = []
 
@@ -367,7 +368,9 @@ def get_comparison_data(sid, coarse):
     # Generate calms.  Subset by community, re-index
     # for easy access, preprocess percent hole size,
     # drop unused columns.
-    station_calms = calms.loc[(calms["sid"] == sid) & (calms["decade"] != "none")].reset_index()
+    station_calms = calms.loc[
+        (calms["sid"] == sid) & (calms["decade"] != "none")
+    ].reset_index()
     station_calms = station_calms.reset_index()
     station_calms = station_calms.assign(percent=station_calms["percent"] / 100)
 

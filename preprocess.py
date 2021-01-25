@@ -53,8 +53,8 @@ def chunk_to_rose(station):
     incoming chunk are.
     """
     # if coarse, bin into 8 categories, 36 otherwise
-    bin_list = [list(range(5, 356, 10)), list(np.arange(22.5, 337.5, 45))]
-    bname_list = [list(range(1, 36)), list(np.arange(4.5, 31.5, 4.5))]
+    bin_list = [list(range(5, 356, 10)), list(np.arange(22.5, 338, 45))]
+    bname_list = [list(range(1, 36)), list(np.arange(4.5, 32, 4.5))]
 
     # Accumulator dataframe.
     proc_cols = [
