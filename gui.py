@@ -245,15 +245,6 @@ columns = wrap_in_section(
                                                 className="title is-4",
                                             ),
                                             dcc.Markdown(
-                                            """
-This section provides a summary of winds observed at the selected station.
- """,
-                                                className="content is-size-6",
-                                            ),
-                                            # Put summary of available data here
-                                            # units_radios_field,
-                                            # rose_res_radios_field,
-                                            dcc.Markdown(
                                                 """
 This wind rose shows prevailing wind direction and speed for all routine hourly data recorded at the selected station.
 
@@ -312,6 +303,12 @@ This wind rose shows prevailing wind direction and speed for all routine hourly 
                                                 "Crosswind component calculation",
                                                 className="title is-4 title--rose",
                                             ),
+                                            dcc.Markdown(
+                                                """
+Use this chart to explore how the allowable crosswind component exceedance changes with runway direction. The three thresholds represent different classes of aircraft.
+                                                """,                                   
+                                                className="content is-size-6"
+                                            ),
                                             dcc.Graph(
                                                 id="exceedance_plot",
                                                 figure=go.Figure(),
@@ -337,7 +334,9 @@ Use this box-plot to explore the seasonal changes in wind energy potential. Each
 * **Horizontal lines within boxes** show averages based on all hourly reports for a month.
 * **Whiskers** (vertical lines above and below boxes) represent the full ranges of typical variation of monthly averages for the different years, extended to the minimum and maximum points contained within 1.5 of the interquartile range (IQR, which is the height of the box shown).
 * **Dots** indicate outliers, or individual values outside the normal variation (1.5 IQR).
-         """,                               ),
+                                                """,                                   
+                                                className="content is-size-6"
+                                            ),
                                             dcc.Graph(
                                                 id="wep_box",
                                                 figure=go.Figure(),
