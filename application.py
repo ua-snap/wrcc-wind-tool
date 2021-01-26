@@ -242,16 +242,16 @@ def get_rose_traces(d, traces, units, showlegend=False, lines=False):
 
 @app.callback(
     Output("rose", "figure"),
-    [Input("airports-dropdown", "value"), Input("rose-coarse", "value")],
+    [Input("airports-dropdown", "value"), Input("units_selector", "value"), Input("rose-coarse", "value")],
 )
-def update_rose(sid, coarse):
+def update_rose(sid, units, coarse):
     """Generate cumulative wind rose for selected airport"""
     station_name = luts.map_data.loc[sid]["real_name"]
     station_rose = roses.loc[(roses["sid"] == sid) & (roses["coarse"] == coarse)]
 
     traces = []
 
-    get_rose_traces(station_rose, traces, True)
+    get_rose_traces(station_rose, traces, units, True)
     # Compute % calm, use this to modify the hole size
     c = calms.loc[(calms["sid"] == sid) & (calms["decade"] == "none")]
     # c_mean = c.mean()
@@ -346,7 +346,7 @@ def get_comparison_data(sid, coarse):
                 "xref": "paper",
                 "yref": "paper",
                 "x": 0.5,
-                "y": 0.6,
+                "y": 0.5,
                 "showarrow": False,
                 "bgcolor": "rgba(211,211,211,0.5)",
                 "font": {"size": 22},
