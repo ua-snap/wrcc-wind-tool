@@ -14,8 +14,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .content {
-	margin: 0 auto;
-	max-width: 40em;
+    /* margin: 0 auto; */
+	max-width: 50em;
 }
 
 nav .navbar-brand img {
@@ -74,12 +74,16 @@ a {
 .dropdown-selector {
     width: 20em;
 }
+/* syling radio buttons */
+.radio-selector {
+    margin-top: 1rem;
+}
 div.Select-control {
     border: 1px solid #888;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }
 .section + .section {
-    border-top: 1px solid #eee;
+    /* border-top: 1px solid #eee; */
 }
 /* Fix up horizontal radio buttons, they're janky */
 .field .control label {
@@ -139,7 +143,7 @@ when the page is loading.
     padding-top: 0;
 }
 #map {
-    max-width: 500px;
+    max-width: 600px;
     height: 400px;
 }
 #exceedance_plot {

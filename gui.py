@@ -137,7 +137,7 @@ form_fields = html.Div(
         dcc.Graph(
             id="map",
             figure=map_figure,
-            config={"displayModeBar": False, "scrollZoom": False},
+            config={"displayModeBar": False, "scrollZoom": True},
         ),
     ],
 )
@@ -152,11 +152,11 @@ help_text = html.Div(
                 dcc.Markdown(
                     """
 
-### About wind observation data
+### About airport wind data
 
  * Wind speed observations source: [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu/request/download.phtml?network=AK_ASOS), run by Iowa State University. Houses data collected by the [Automated Surface Observing System](https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-surface-observing-system-asos) network and the [Automated Weather Observing System](https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-weather-observing-system-awos).
- * Measurement frequency: Varies between locations, from every 5 minutes to every 3 hours. Winds were measured hourly in most cases; speeds were averaged to the nearest hour in cases where measurements were more frequent.
- * Observing site criteria: We use data from 67 observing sites located across Alaska, mostly at airports (see map). For inclusion here, a station must have made 4 or more hourly wind measurements on at least 75&percnt; of the days during the period 1980&ndash;2014.
+ * Measurement frequency: Varies between locations, from every 5 minutes to every 3 hours. Winds were measured hourly in most cases; speeds from routine measurements were preferred (nearest to clock hour) in cases where measurements were more frequent.
+ * Observing site criteria: We use data from 185 airport weather stations located across Alaska. For inclusion here, a station must have begun measurements before June 6, 2010.
 
 ##### Data processing and quality control
 
@@ -174,7 +174,7 @@ help_text = html.Div(
 )
 
 units_radios_field = html.Div(
-    className="Field",
+    className="field radio-selector",
     children=[
         html.Label("Wind speed units", className="label"),
         # Position this text better?
@@ -197,7 +197,7 @@ units_radios_field = html.Div(
 )
 
 rose_res_radios_field = html.Div(
-    className="Field",
+    className="field radio-selector",
     children=[
         html.Label("Wind rose display", className="label"),
         # Position this text better with CSS?
@@ -222,6 +222,7 @@ columns = wrap_in_section(
     html.Div(
         className="section charts",
         children=[
+            # retaining this column structure for now in case TOC is added later
             html.Div(
                 className="columns",
                 children=[
@@ -245,21 +246,61 @@ columns = wrap_in_section(
                                             ),
                                             dcc.Markdown(
                                             """
-This section provides a summary of winds observed at the selected station .
+This section provides a summary of winds observed at the selected station.
  """,
                                                 className="content is-size-6",
                                             ),
                                             # Put summary of available data here
-                                            units_radios_field,
-                                            rose_res_radios_field,
-                                            dcc.Graph(
-                                                id="rose",
-                                                figure=go.Figure(),
-                                                config=luts.fig_configs,
+                                            # units_radios_field,
+                                            # rose_res_radios_field,
+                                            dcc.Markdown(
+                                                """
+This wind rose shows prevailing wind direction and speed for all routine hourly data recorded at the selected station.
+
+ * **Spokes** in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).
+ * **Colors** within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.
+ * **Size of the center** hole indicates the &percnt; of calm winds.
+     """,
+                                                className="content is-size-6",
                                             ),
+                                            html.Div(
+                                                className="columns",
+                                                children=[
+                                                    html.Div(
+                                                        className="column is-four-fifths",
+                                                        children=[
+                                                            dcc.Graph(
+                                                                id="rose",
+                                                                figure=go.Figure(),
+                                                                config=luts.fig_configs,
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    html.Div(
+                                                        className="column is-one-fifth",
+                                                        children=[
+                                                            html.H4(
+                                                                "Wind data options",
+                                                                className="title is-6",
+                                                            ),
+                                                            dcc.Markdown(
+                                                                """
+                                                                Control how the wind data are displayed.
+                                                                """
+                                                            ),
+                                                            units_radios_field,
+                                                            rose_res_radios_field,
+                                                        ]
+                                                    )
+                                                ]
+                                            )
+                                            # dcc.Graph(
+                                            #     id="rose",
+                                            #     figure=go.Figure(),
+                                            #     config=luts.fig_configs,
+                                            # ),
                                         ]
                                     ),
-
                                     html.Div(
                                         className="section",
                                         children=[
@@ -281,18 +322,41 @@ This section provides a summary of winds observed at the selected station .
                                     html.Div(
                                         className="section",
                                         children=[
+                                            html.A(id="toc_g3"),
+                                            # maybe reorganize?
+
                                             html.H3(
-                                                "Historical wind speed/direction comparison",
+                                                "Wind energy potential",
                                                 className="title is-4 title--rose",
                                             ),
                                             dcc.Markdown(
                                                 """
-    These wind roses show prevailing wind direction and speed for two historical decades: "recent" (2010-2019) and older decades if data availability allow.
+Use this box-plot to explore the seasonal changes in wind energy potential. Each month's average wind energy values are averaged over the period of available data.
 
-     * **Spokes** in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).
-     * **Colors** within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.
-     * **Size of the center** hole indicates the &percnt; of calm winds.
-         """,
+* **Boxes** show the middle 50&percnt; of monthly averages.
+* **Horizontal lines within boxes** show averages based on all hourly reports for a month.
+* **Whiskers** (vertical lines above and below boxes) represent the full ranges of typical variation of monthly averages for the different years, extended to the minimum and maximum points contained within 1.5 of the interquartile range (IQR, which is the height of the box shown).
+* **Dots** indicate outliers, or individual values outside the normal variation (1.5 IQR).
+         """,                               ),
+                                            dcc.Graph(
+                                                id="wep_box",
+                                                figure=go.Figure(),
+                                                config=luts.fig_configs,
+                                            ),
+                                        ]
+                                    ),
+                                    html.Hr(),
+                                    html.Div(
+                                        className="section",
+                                        children=[
+                                            html.H3(
+                                                "Historical winds comparison",
+                                                className="title is-4 title--rose",
+                                            ),
+                                            dcc.Markdown(
+                                                """
+These wind roses show prevailing wind direction and speed for two historical decades: "recent" (2010-2019) and the oldest decade available.
+                                                """,
                                                 className="content is-size-6",
                                             ),
                                             html.Div(
@@ -304,6 +368,12 @@ This section provides a summary of winds observed at the selected station .
                                                     ),
                                                 ]
                                             ),
+                                            dcc.Markdown(
+                                                """
+This chart displays differences in occurrence frequencies of the various wind classes between the historical decades summarized in the roses above. Use it to further explore the change in winds from then to now.
+                                                """,
+                                                className="content is-size-6",
+                                            ),
                                             html.Div(
                                                 id="rose-diff-container", children=[
                                                     dcc.Graph(
@@ -313,25 +383,7 @@ This section provides a summary of winds observed at the selected station .
                                                     ),
                                                 ]
                                             ),
-        
-                                            html.H3(
-                                                "Wind energy potential",
-                                                className="title is-4 title--rose",
-                                            ),
-                                            dcc.Graph(
-                                                id="wep_box",
-                                                figure=go.Figure(),
-                                                config=luts.fig_configs,
-                                            ),
-                                            dcc.Markdown(
-                                                """
-Use this box-plot to explore the seasonal changes in wind energy potential. Each month's average wind energy values are averaged over the period of available data.
-
-* **Boxes** show the middle 50&percnt; of monthly averages.
-* **Horizontal lines within boxes** show averages based on all hourly reports for a month.
-* **Whiskers** (vertical lines above and below boxes) represent the full ranges of typical variation of monthly averages for the different years, extended to the minimum and maximum points contained within 1.5 of the interquartile range (IQR, which is the height of the box shown).
-* **Dots** indicate outliers, or individual values outside the normal variation (1.5 IQR).
-         """,                               )
+                                            
                                         ],
                                     ),
                                     html.Hr(),
