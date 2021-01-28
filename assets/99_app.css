@@ -2,11 +2,11 @@
 @import url('https://fonts.googleapis.com/css?family=Cardo:400,400i,700&subset=latin-ext');
 
 html, body {
-	font-family: 'Cardo';
+    font-family: 'Cardo';
 }
 
 h1, h2, h3, h4, h5, h6 {
-	font-family: 'Open Sans';
+    font-family: 'Open Sans';
 }
 
 .button {
@@ -14,17 +14,98 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .content {
-    /* margin: 0 auto; */
-	max-width: 50em;
+    max-width: 50rem;
+    margin: 0 auto;
 }
 
 nav .navbar-brand img {
-	max-height: 3rem;
-	height: 3rem;
+    max-height: 3rem;
+    height: 3rem;
 }
-/* We want vertical Checklists always. */
-.control label.checkbox {
-	display: block;
+
+table {
+    padding-bottom: 2rem;
+}
+
+table.table thead tr.noborder th[scope="col"] {
+    border: none;
+}
+
+tbody td span {
+    font-size: 90%;
+    color: #666;
+}
+
+input[type="radio"] {
+    display: inline-block;
+    margin-right: 1ex;
+}
+
+.interstitial {
+    margin-top: 5rem;
+}
+
+#timeslice-dropdown {
+    padding-top: .5ex;
+}
+
+.label:not(:last-child) {
+    margin-bottom: 0;
+}
+
+.label {
+    padding-top: .5rem;
+}
+
+.field.units {
+    padding-top: 15px;
+}
+
+.section {
+    padding: 1.5rem;
+}
+
+#nan_values {
+    display: none;
+}
+
+#above_tables {
+    display: none;
+}
+
+.dash-dropdown {
+    max-width: 25rem;
+}
+
+.label_spacing {
+    padding-right: 2rem;
+}
+
+#map {
+    width: 50rem;
+}
+
+#airports-dropdown.Select {
+    width: 25rem;
+}
+
+.words-block-grey {
+    background: #f4faff;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+}
+
+.roomy {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+}
+
+.leaflet-grab {
+    cursor: pointer !important;
+}
+
+footer.footer {
+    padding-bottom: 8rem;
 }
 
 .footer {
@@ -33,177 +114,30 @@ nav .navbar-brand img {
 }
 
 .footer div.wrapper {
-	margin: 2rem auto;
-	display: flex;
-	height: 8rem;
-	max-height: 8rem;
+    margin: 2rem auto 0;
+    display: flex;
+    height: 8rem;
+    max-height: 8rem;
 }
 
 
 .footer img {
-	min-width: 12.5vw;
-	max-width: 150px;
-	padding: 0 1rem;
-	display: block;
-	position: relative;
-	top: .25rem;
-	object-fit: contain;
+    min-width: 12.5vw;
+    max-width: 150px;
+    padding: 0 1rem;
+    display: block;
+    position: relative;
+    top: .25rem;
+    object-fit: contain;
     align-self: flex-start;
 }
 
 .footer p {
-	text-align: left;
-	font-size: 0.95rem;
-	margin: 0 1rem 1rem;
+    text-align: left;
+    font-size: 0.95rem;
+    margin: 0 1rem 1rem;
 }
 
 .footer div.wrapped {
-	flex: 1 1 auto;
-}
-
-
-/* Tweaks to Bulma / Plotly control/form elements */
-/* Slightly boost font size for body text. */
-.is-size-6 {
-    font-size: 1.2rem!important;
-}
-a {
-    color: #0570b0;
-}
-/* Styling the dropdown selectors */
-.dropdown-selector {
-    width: 20em;
-}
-/* syling radio buttons */
-.radio-selector {
-    margin-top: 1rem;
-}
-div.Select-control {
-    border: 1px solid #888;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
-}
-.section + .section {
-    /* border-top: 1px solid #eee; */
-}
-/* Fix up horizontal radio buttons, they're janky */
-.field .control label {
-    margin-right: 1rem;
-}
-.field .control input[type="radio"] {
-    position: relative;
-    bottom: 2px;
-    right: 5px;
-}
-
-
-/* Header & intro styles */
-.header {
-    background-color: #DDE4F2;
-    padding: 0;
-}
-.header--section {
-    margin-top: -1rem;
-}
-.header--section h1 {
-    padding-top: .8rem;
-}
-.header--logo {
-    float: left;
-    padding-right: 2rem;
-}
-.header--snap-link a {
-    height: 5.4em;
-    display: block;
-    z-index: 1000;
-}
-.header--snap-link img {
-    height: 5.4em;
-}
-.section.survey-link a.button {
-    font-weight: 700;
-}
-.camera-icon {
-    padding-bottom: 2rem;
-}
-.camera-icon span {
-    display: inline-block;
-    position: relative;
-    top: 0.25rem;
-    padding: 0 3px;
-}
-.camera-icon span path {
-    fill: #ccc;
-}
-
-/* Chart layout/padding styles.
-Block out height/width for all charts to reduce "bounce"
-when the page is loading.
-*/
-.section.charts {
-    padding-top: 0;
-}
-#map {
-    max-width: 600px;
-    height: 400px;
-}
-#exceedance_plot {
-    max-width: 970px;
-    height: 500px;
-}
-#rose {
-    max-width: 970px;
-    height: 700px;
-}
-#rose_sxs {
-    max-width: 1000px;
-    height: 800px;
-}
-#rose_diff {
-    max-width: 1000px;
-    height: 800px;
-}
-#wep_box {
-    max-width: 1000px;
-}
-#threshold_graph {
-    max-width: 970px;
-    height: 400px;
-}
-#future_delta_percentiles {
-    max-width: 970px;
-    height: 600px;
-}
-#future_rose {
-    max-width: 970px;
-    height: 550px;
-}
-
-/*
-Style some SVG elements within Plotly to hide things we don't want.
-Not entirely sure why, but need to hide this SVG to prevent
-unwanted background from being shown behind the
-wind roses in Plotly.
-*/
-g.bglayer {
-    display: none !important;
-}
-/*
-Hide 'Aa' from legends in bubble plot.
-https://github.com/plotly/plotly.js/issues/2967#
-*/
-g.pointtext {
-    display: none;
-}
-
-/* Footer! */
-.footer p {
-    width: 50%;
-    margin: 1em auto;
-}
-.footer a {
-    display: inline-block;
-}
-.footer a img {
-    height: 5em;
-    margin: 1em 1.5em;
+    flex: 1 1 auto;
 }
