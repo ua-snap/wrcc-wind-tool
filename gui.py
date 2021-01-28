@@ -37,151 +37,104 @@ def wrap_in_section(content, section_classes="", container_classes="", div_class
     )
 
 
-header = html.Div(
-    className="header",
-    children=[
-        html.Div(
-            className="container",
-            children=[
-                html.Div(
-                    className="section header--section",
-                    children=[
-                        html.Div(
-                            className="header--titles",
-                            children=[
-                                html.H1(
-                                    "WRCC Alaska Aviation Wind Tool", className="title is-3"
-                                ),
-                                html.H2(
-                                    "Explore aviation-relevant wind data for Alaska airports",
-                                    className="subtitle is-5",
-                                ),
-                            ],
-                        ),
-                    ],
-                )
-            ],
-        )
-    ],
-)
-
-intro = wrap_in_section(
-    html.Div(
-        # className="section",
+def wrap_in_field(label, control, className=""):
+    """
+    Returns the control wrapped
+    in Bulma-friendly markup.
+    """
+    return html.Div(
+        className="field " + className,
         children=[
-            html.Div(
-                className="container",
-                children=[
-                    html.Div(
-                        className="survey-link",
-                        children=[
-                            html.P(
-                                "",
-                                className="content is-size-4",
-                            ),
-                            html.A(
-                                "Let us know how we can make this tool better",
-                                className="button is-link is-medium",
-                                rel="external",
-                                target="_blank",
-                                # href="https://uaf-iarc.typeform.com/to/hOnb5h",
-                                href="replace with typeform link"
-                            ),
-                        ],
-                    )
-                ],
-            )
+            html.Label(label, className="label"),
+            html.Div(className="control", children=control),
         ],
     )
+
+
+header = ddsih.DangerouslySetInnerHTML(
+    f"""
+<div class="container">
+<nav class="navbar" role="navigation" aria-label="main navigation">
+
+  <div class="navbar-brand">
+    <a class="navbar-item" href="https://uaf-snap.org">
+      <img src="{path_prefix}assets/snap_acronym.svg">
+    </a>
+
+    <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+
+  <div class="navbar-menu">
+
+    <div class="navbar-end">
+      <div class="navbar-item">
+        <div class="buttons">
+          <a href="https://uaf-iarc.typeform.com/to/mN7J5cCK#tool=HistoricalWinds%20at%20Alaska%20Airports" class="button is-link" target="_blank">
+            Feedback
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+</div>
+"""
 )
 
-airports_dropdown_field = html.Div(
-    className="field dropdown-selector",
-    children=[
-        html.Label("Choose a location", className="label"),
-        html.Div(
-            className="control",
-            children=[
-                dcc.Dropdown(
-                    id="airports-dropdown",
-                    options=[
-                        {"label": airport.real_name, "value": index}
-                        for index, airport in luts.map_data.iterrows()
-                    ],
-                    value="PAFA",
-                ),
-                # blank component only used for storing filtered wind rose data
-                html.P(id="comparison-rose-data")
-            ],
-        ),
-    ],
-)
-
-form_fields = html.Div(
-    className="selectors form",
-    children=[
-        dcc.Markdown(
-            """
-            Explore past wind data from airport weather stations in Alaska. Start by choosing a specific airport.
-""",
-            className="content is-size-5",
-        ),
+about = wrap_in_section(
+    [
         ddsih.DangerouslySetInnerHTML(
             """
-<p class="content is-size-5 camera-icon">Click the <span>
+            <h1 class="title is-3">Historical Winds at Alaska Airports</h1>
+            <p class="is-size-5">Explore visualizations of historical wind data recorded at Alaska airports.  Start by choosing a location by clicking the map or from a list of airports.</p>
+            <p class="content is-size-5 camera-icon">Click the <span>
 <svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m500 450c-83 0-150-67-150-150 0-83 67-150 150-150 83 0 150 67 150 150 0 83-67 150-150 150z m400 150h-120c-16 0-34 13-39 29l-31 93c-6 15-23 28-40 28h-340c-16 0-34-13-39-28l-31-94c-6-15-23-28-40-28h-120c-55 0-100-45-100-100v-450c0-55 45-100 100-100h800c55 0 100 45 100 100v450c0 55-45 100-100 100z m-400-550c-138 0-250 112-250 250 0 138 112 250 250 250 138 0 250-112 250-250 0-138-112-250-250-250z m365 380c-19 0-35 16-35 35 0 19 16 35 35 35 19 0 35-16 35-35 0-19-16-35-35-35z" transform="matrix(1 0 0 -1 0 850)"></path></svg>
 </span> icon in the upper&ndash;right of each chart to download it.</p>
             """
-        ),
-        airports_dropdown_field,
-        dcc.Graph(
-            id="map",
-            figure=map_figure,
-            config={"displayModeBar": False, "scrollZoom": True},
-        ),
+        )
     ],
+    section_classes="words-block-grey",
+    div_classes="content",
 )
 
-help_text = html.Div(
-    className="section",
-    children=[
-        html.A(id="toc_about"),
-        html.Div(
-            className="section",
-            children=[
-                dcc.Markdown(
-                    """
 
-### About airport wind data
-
- * Wind speed observations source: [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu/request/download.phtml?network=AK_ASOS), run by Iowa State University. Houses data collected by the [Automated Surface Observing System](https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-surface-observing-system-asos) network and the [Automated Weather Observing System](https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-weather-observing-system-awos).
- * Measurement frequency: Varies between locations, from every 5 minutes to every 3 hours. Winds were measured hourly in most cases; speeds from routine measurements were preferred (nearest to clock hour) in cases where measurements were more frequent.
- * Observing site criteria: We use data from 185 airport weather stations located across Alaska. For inclusion here, a station must have begun measurements before June 6, 2010.
-
-##### Data processing and quality control
-
- * Data were adjusted for homogeneity because some instrument heights (now 10 m) and/or precise locations have changed since 1980.
- * Wind speeds at 28 stations showed a statistically significant change from one part of the record to the next. Therefore we adjusted the data prior to the change using quantile mapping, a typical method for correcting biased meteorological data.
- * Four stations displayed two discontinuities. For these, we applied the quantile mapping adjustments to the later period.
- * We also removed obviously wrong reports (e.g., wind speeds exceeding 100 mph) and short-duration (< 6 hour) spikes in which an hourly wind speed was at least 30 mph greater than in the immediately preceding and subsequent hours.
-
-                """,
-                    className="is-size-6 content",
-                )
-            ],
-        ),
-    ],
+airports_dropdown_field = wrap_in_field(
+    "Select an airport",
+    dcc.Dropdown(
+        id="airports-dropdown",
+        options=[
+            {"label": airport.real_name, "value": index}
+            for index, airport in luts.map_data.iterrows()
+        ],
+        value="PAFA",
+    ),
 )
+
+
+map_selector_section = wrap_in_section(
+    html.Div(
+        children=[
+            airports_dropdown_field,
+            dcc.Graph(
+                id="map",
+                figure=map_figure,
+                config={"displayModeBar": False, "scrollZoom": True},
+            ),
+        ],
+    ),
+    section_classes="roomy",
+    container_classes="content",
+)
+
 
 units_radios_field = html.Div(
     className="field radio-selector",
     children=[
         html.Label("Wind speed units", className="label"),
-        # Position this text better?
-        # dcc.Markdown(
-        #     "Set the units used for displaying wind speed data.", 
-        #     className="is-size-10 content"
-        # ),
         dcc.RadioItems(
             id="units_selector",
             labelClassName="radio",
@@ -192,7 +145,7 @@ units_radios_field = html.Div(
                 {"label": "m/s", "value": "m/s"},
             ],
             value="kts",
-        )
+        ),
     ],
 )
 
@@ -200,11 +153,6 @@ rose_res_radios_field = html.Div(
     className="field radio-selector",
     children=[
         html.Label("Wind rose display", className="label"),
-        # Position this text better with CSS?
-        # dcc.Markdown(
-        #     "", 
-        #     className="is-size-10 content"
-        # ),
         dcc.RadioItems(
             id="rose-coarse",
             labelClassName="radio",
@@ -214,219 +162,198 @@ rose_res_radios_field = html.Div(
                 {"label": "coarse", "value": True},
             ],
             value=False,
-        )
+        ),
     ],
 )
 
-columns = wrap_in_section(
+
+wind_rose_intro = wrap_in_section(
+    ddsih.DangerouslySetInnerHTML(
+        """
+<h3 class="title is-4">Station summary</h3>
+<p>This wind rose shows prevailing wind direction and speed for all routine hourly data recorded at the selected station.</p>
+ <ul>
+   <li><strong>Spokes</strong> in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).</li>
+   <li><strong>Colors</strong> within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.</li>
+   <li><strong>Size</strong> of the center hole indicates the &percnt; of calm winds.</li>
+ </ul>
+"""
+    ),
+    section_classes="words-block-grey",
+    container_classes="content is-size-5",
+)
+
+wind_rose_section = wrap_in_section(
     html.Div(
-        className="section charts",
+        className="columns",
         children=[
-            # retaining this column structure for now in case TOC is added later
             html.Div(
-                className="columns",
+                className="column is-four-fifths",
                 children=[
-                    # html.Div(className="column is-one-fifth", children=[toc]),
-                    html.Div(
-                        className="column",
-                        children=[
-                            html.Div(
-                                children=[
-                                    html.Div(
-                                        className="section",
-                                        children=[html.A(id="toc_location"), form_fields],
-                                    ),
-                                    html.Div(
-                                        className="section",
-                                        children=[
-                                            html.A(id="toc_g1"),
-                                            html.H3(
-                                                "Station summary",
-                                                className="title is-4",
-                                            ),
-                                            dcc.Markdown(
-                                                """
-This wind rose shows prevailing wind direction and speed for all routine hourly data recorded at the selected station.
-
- * **Spokes** in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).
- * **Colors** within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.
- * **Size of the center** hole indicates the &percnt; of calm winds.
-     """,
-                                                className="content is-size-6",
-                                            ),
-                                            html.Div(
-                                                className="columns",
-                                                children=[
-                                                    html.Div(
-                                                        className="column is-four-fifths",
-                                                        children=[
-                                                            dcc.Graph(
-                                                                id="rose",
-                                                                figure=go.Figure(),
-                                                                config=luts.fig_configs,
-                                                            ),
-                                                        ]
-                                                    ),
-                                                    html.Div(
-                                                        className="column is-one-fifth",
-                                                        children=[
-                                                            html.H4(
-                                                                "Wind data options",
-                                                                className="title is-6",
-                                                            ),
-                                                            dcc.Markdown(
-                                                                """
-                                                                Control how the wind data are displayed.
-                                                                """
-                                                            ),
-                                                            units_radios_field,
-                                                            rose_res_radios_field,
-                                                        ]
-                                                    )
-                                                ]
-                                            )
-                                            # dcc.Graph(
-                                            #     id="rose",
-                                            #     figure=go.Figure(),
-                                            #     config=luts.fig_configs,
-                                            # ),
-                                        ]
-                                    ),
-                                    html.Div(
-                                        className="section",
-                                        children=[
-                                            html.A(id="toc_g2"),
-                                            # maybe reorganize?
-
-                                            # Better title: allowable crosswind component exceedance profile
-                                            html.H3(
-                                                "Crosswind component calculation",
-                                                className="title is-4 title--rose",
-                                            ),
-                                            dcc.Markdown(
-                                                """
-Use this chart to explore how the allowable crosswind component exceedance changes with runway direction. The three thresholds represent different classes of aircraft.
-                                                """,                                   
-                                                className="content is-size-6"
-                                            ),
-                                            dcc.Graph(
-                                                id="exceedance_plot",
-                                                figure=go.Figure(),
-                                                config=luts.fig_configs,
-                                            ),
-                                        ]
-                                    ),
-                                    html.Div(
-                                        className="section",
-                                        children=[
-                                            html.A(id="toc_g3"),
-                                            # maybe reorganize?
-
-                                            html.H3(
-                                                "Wind energy potential",
-                                                className="title is-4 title--rose",
-                                            ),
-                                            dcc.Markdown(
-                                                """
-Use this box-plot to explore the seasonal changes in wind energy potential. Each month's average wind energy values are averaged over the period of available data.
-
-* **Boxes** show the middle 50&percnt; of monthly averages.
-* **Horizontal lines within boxes** show averages based on all hourly reports for a month.
-* **Whiskers** (vertical lines above and below boxes) represent the full ranges of typical variation of monthly averages for the different years, extended to the minimum and maximum points contained within 1.5 of the interquartile range (IQR, which is the height of the box shown).
-* **Dots** indicate outliers, or individual values outside the normal variation (1.5 IQR).
-                                                """,                                   
-                                                className="content is-size-6"
-                                            ),
-                                            dcc.Graph(
-                                                id="wep_box",
-                                                figure=go.Figure(),
-                                                config=luts.fig_configs,
-                                            ),
-                                        ]
-                                    ),
-                                    html.Hr(),
-                                    html.Div(
-                                        className="section",
-                                        children=[
-                                            html.H3(
-                                                "Historical winds comparison",
-                                                className="title is-4 title--rose",
-                                            ),
-                                            dcc.Markdown(
-                                                """
-These wind roses show prevailing wind direction and speed for two historical decades: "recent" (2010-2019) and the oldest decade available.
-                                                """,
-                                                className="content is-size-6",
-                                            ),
-                                            html.Div(
-                                                id="rose-sxs-container", children=[
-                                                    dcc.Graph(
-                                                        id="rose_sxs",
-                                                        figure=go.Figure(),
-                                                        config=luts.fig_configs,
-                                                    ),
-                                                ]
-                                            ),
-                                            dcc.Markdown(
-                                                """
-This chart displays differences in occurrence frequencies of the various wind classes between the historical decades summarized in the roses above. Use it to further explore the change in winds from then to now.
-                                                """,
-                                                className="content is-size-6",
-                                            ),
-                                            html.Div(
-                                                id="rose-diff-container", children=[
-                                                    dcc.Graph(
-                                                        id="rose_diff",
-                                                        figure=go.Figure(),
-                                                        config=luts.fig_configs,
-                                                    ),
-                                                ]
-                                            ),
-                                            
-                                        ],
-                                    ),
-                                    html.Hr(),
-                                ]
-                            ),
-                            help_text,
-                        ],
+                    dcc.Graph(
+                        id="rose",
+                        figure=go.Figure(),
+                        config=luts.fig_configs,
                     ),
                 ],
-            )
+            ),
+            html.Div(
+                className="column is-one-fifth",
+                children=[
+                    units_radios_field,
+                    rose_res_radios_field,
+                ],
+            ),
         ],
-    ), 
-    "charts"
+    )
+)
+
+crosswind_intro = wrap_in_section(
+    ddsih.DangerouslySetInnerHTML(
+        """
+<h3 class="title is-4">Crosswind Component Calculation</h3>
+<p>Use this chart to explore how the allowable crosswind component exceedance changes with runway direction. The three thresholds represent different classes of aircraft.</p>
+  """
+    ),
+    section_classes="words-block-grey interstitial",
+    container_classes="content is-size-5",
+)
+
+crosswind_section = wrap_in_section(
+    dcc.Graph(
+        id="exceedance_plot",
+        figure=go.Figure(),
+        config=luts.fig_configs,
+    )
+)
+
+wind_energy_intro = wrap_in_section(
+    ddsih.DangerouslySetInnerHTML(
+        """
+<h3 class="title is-4">Wind Energy Potential</h3>
+<p>Use this box-plot to explore the seasonal changes in wind energy potential. Each month's average wind energy values are averaged over the period of available data.</p>
+
+ <ul>
+     <li>Boxes show the middle 50&percnt; of monthly averages.</li>
+     <li>Horizontal lines within boxes show averages based on all hourly reports for a month.</li>
+     <li>Whiskers (vertical lines above and below boxes) represent the full ranges of typical variation of monthly averages for the different years, extended to the minimum and maximum points contained within 1.5 of the interquartile range (IQR, which is the height of the box shown).</li>
+     <li>Dots indicate outliers, or individual values outside the normal variation (1.5 IQR).</li>
+ </ul>
+
+  """
+    ),
+    section_classes="words-block-grey interstitial",
+    container_classes="content is-size-5",
+)
+
+wind_energy_section = wrap_in_section(
+    dcc.Graph(
+        id="wep_box",
+        figure=go.Figure(),
+        config=luts.fig_configs,
+    )
+)
+
+historical_roses_intro = wrap_in_section(
+    ddsih.DangerouslySetInnerHTML(
+        """
+<h3 class="title is-4">Historical Winds Comparison</h3>
+<p>These wind roses show prevailing wind direction and speed for two historical decades: &ldquo;recent&rdquo; (2010&ndash;2019) and the oldest decade available.</p>
+  """
+    ),
+    section_classes="words-block-grey interstitial",
+    container_classes="content is-size-5",
+)
+
+historical_roses_section = wrap_in_section(
+    dcc.Graph(
+        id="rose_sxs",
+        figure=go.Figure(),
+        config=luts.fig_configs,
+    )
+)
+
+historical_change_intro = wrap_in_section(
+    ddsih.DangerouslySetInnerHTML(
+        """
+<h3 class="title is-4">Change in Winds</h3>
+<p>The chart below displays differences in occurrence frequencies of the various wind classes between the historical decades summarized in the roses above. Use it to further explore the change in winds from then to now.</p>
+  """
+    ),
+    section_classes="words-block-grey interstitial",
+    container_classes="content is-size-5",
+)
+
+historical_change_section = wrap_in_section(
+    dcc.Graph(
+        id="rose_diff",
+        figure=go.Figure(),
+        config=luts.fig_configs,
+    ),
+)
+
+help_text = wrap_in_section(
+    ddsih.DangerouslySetInnerHTML(
+        """
+<h3 class="title is-4">About Airport Wind Data</h3>
+
+<p>Wind speed observations source: <a href="https://mesonet.agron.iastate.edu/request/download.phtml?network=AK_ASOS">Iowa Environmental Mesonet</a>, run by Iowa State University. Houses data collected by the <a href="https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-surface-observing-system-asos">Automated Surface Observing System</a> network and the <a href="https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-weather-observing-system-awos">Automated Weather Observing System</a>.</p>
+<p>Measurement frequency: Varies between locations, from every 5 minutes to every 3 hours. Winds were measured hourly in most cases; speeds from routine measurements were preferred (nearest to clock hour) in cases where measurements were more frequent.</p>
+<p>Observing site criteria: We use data from 185 airport weather stations located across Alaska. For inclusion here, a station must have begun measurements before June 6, 2010.</p>
+
+<h4 class="title is-4">Data processing and quality control</h4>
+
+<p>Data were adjusted for homogeneity because some instrument heights (now 10 m) and/or precise locations have changed since 1980.</p>
+<p>Wind speeds at 28 stations showed a statistically significant change from one part of the record to the next. Therefore we adjusted the data prior to the change using quantile mapping, a typical method for correcting biased meteorological data.</p>
+<p>Four stations displayed two discontinuities. For these, we applied the quantile mapping adjustments to the later period.</p>
+<p>We also removed obviously wrong reports (e.g., wind speeds exceeding 100 mph) and short-duration (< 6 hour) spikes in which an hourly wind speed was at least 30 mph greater than in the immediately preceding and subsequent hours.</p>
+"""
+    ),
+    section_classes="words-block-grey",
+    container_classes="content is-size-5",
 )
 
 
+# Used in copyright date
+current_year = datetime.now().year
+
 footer = html.Footer(
-    className="footer has-text-centered",
+    className="footer",
     children=[
-        html.Div(
-            children=[
-                html.A(
-                    href="https://snap.uaf.edu",
-                    target="_blank",
-                    className="level-item",
-                    children=[html.Img(src=path_prefix + "assets/SNAP_color_all.svg")],
-                ),
-                html.A(
-                    href="https://uaf.edu/uaf/",
-                    target="_blank",
-                    className="level-item",
-                    children=[html.Img(src=path_prefix + "assets/UAF.svg")],
-                ),
-            ]
-        ),
-        dcc.Markdown(
+        ddsih.DangerouslySetInnerHTML(
+            f"""
+<footer class="container">
+    <div class="wrapper is-size-6">
+        <img src="{path_prefix}assets/UAF.svg"/>
+        <div class="wrapped">
+            <p>This tool was developed by the <a href="https://uaf-snap.org">Scenarios Network for Alaska & Arctic Planning (SNAP)</a> in collaboration with and funded by the <a href="https://wrcc.dri.edu">Western Regional Climate Center</a> (WRCC). SNAP is a research group at the <a href="https://uaf-iarc.org/">International Arctic Research Center (IARC)</a> at the <a href="https://uaf.edu/uaf/">University of Alaska Fairbanks (UAF)</a>.</p>
+            <p>Copyright &copy; {current_year} University of Alaska Fairbanks.  All rights reserved.</p>
+            <p>UA is an AA/EO employer and educational institution and prohibits illegal discrimination against any individual.  <a href="https://www.alaska.edu/nondiscrimination/">Statement of Nondiscrimination</a> and <a href="https://www.alaska.edu/records/records/compliance/gdpr/ua-privacy-statement/">Privacy Statement</a>.</p>
+        </div>
+    </div>
+</footer>
             """
-UA is an AA/EO employer and educational institution and prohibits illegal discrimination against any individual. [Statement of Nondiscrimination](https://www.alaska.edu/nondiscrimination/)
-            """,
-            className="content is-size-6",
         ),
     ],
 )
 
 layout = html.Div(
-    children=[header, intro, html.Hr(), columns, footer],
+    children=[
+        header,
+        about,
+        map_selector_section,
+        wind_rose_intro,
+        wind_rose_section,
+        crosswind_intro,
+        crosswind_section,
+        wind_energy_intro,
+        wind_energy_section,
+        historical_roses_intro,
+        historical_roses_section,
+        historical_change_intro,
+        historical_change_section,
+        help_text,
+        footer,
+        html.P(id="comparison-rose-data"),
+    ],
 )

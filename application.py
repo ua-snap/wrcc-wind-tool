@@ -55,29 +55,29 @@ app.index_string = f"""
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <!-- Schema.org markup for Google+ -->
-        <meta itemprop="name" content="WRCC Aviation Wind Tool">
+        <meta itemprop="name" content="Historical Winds at Alaska Airports">
         <meta itemprop="description" content="Explore historical wind data for Alaska airports">
-        <meta itemprop="image" content="http://windtool.accap.uaf.edu/assets/wind-rose.png">
+        <meta itemprop="image" content="http://snap.uaf.edu/tools/airport-winds/wind-rose.png">
 
         <!-- Twitter Card data -->
         <meta name="twitter:card" content="summary_large_image">
         <meta name="twitter:site" content="@SNAPandACCAP">
-        <meta name="twitter:title" content="WRCC Aviation Wind Tool">
+        <meta name="twitter:title" content="Historical Winds at Alaska Airports">
         <meta name="twitter:description" content="Explore historical wind data for Alaska airports">
-        <meta name="twitter:creator" content="@SNAPandWRCC">
+        <meta name="twitter:creator" content="@SNAPandACCAP">
         <!-- Twitter summary card with large image must be at least 280x150px -->
-        <meta name="twitter:image:src" content="http://windtool.accap.uaf.edu/assets/wind-rose.png">
+        <meta name="twitter:image:src" content="http://snap.uaf.edu/tools/airport-winds/wind-rose.png">
 
         <!-- Open Graph data -->
-        <meta property="og:title" content="WRCC Aviation Wind Tool" />
+        <meta property="og:title" content="Historical Winds at Alaska Airports" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="http://windtool.accap.uaf.edu" />
-        <meta property="og:image" content="http://windtool.accap.uaf.edu/assets/wind-rose.png" />
+        <meta property="og:url" content="http://snap.uaf.edu/tools/airport-winds" />
+        <meta property="og:image" content="http://snap.uaf.edu/tools/airport-winds/wind-rose.png" />
         <meta property="og:description" content="Explore historical wind data for Alaska airports" />
-        <meta property="og:site_name" content="WRCC Aviation Wind Tool" />
+        <meta property="og:site_name" content="Historical Winds at Alaska Airports" />
 
-        <link rel="alternate" hreflang="en" href="http://windtool.accap.uaf.edu" />
-        <link rel="canonical" href="http://windtool.accap.uaf.edu"/>
+        <link rel="alternate" hreflang="en" href="http://snap.uaf.edu/tools/airport-winds" />
+        <link rel="canonical" href="http://snap.uaf.edu/tools/airport-winds"/>
         {{%favicon%}}
         {{%css%}}
     </head>
@@ -242,7 +242,11 @@ def get_rose_traces(d, traces, units, showlegend=False, lines=False):
 
 @app.callback(
     Output("rose", "figure"),
-    [Input("airports-dropdown", "value"), Input("units_selector", "value"), Input("rose-coarse", "value")],
+    [
+        Input("airports-dropdown", "value"),
+        Input("units_selector", "value"),
+        Input("rose-coarse", "value"),
+    ],
 )
 def update_rose(sid, units, coarse):
     """Generate cumulative wind rose for selected airport"""
@@ -319,7 +323,7 @@ def update_rose(sid, units, coarse):
     [Input("airports-dropdown", "value"), Input("rose-coarse", "value")],
 )
 def get_comparison_data(sid, coarse):
-    """Prep data that will be used in the side-by-side roses and 
+    """Prep data that will be used in the side-by-side roses and
     the difference polar line chart
     """
     station_name = luts.map_data.loc[sid]["real_name"]
@@ -534,7 +538,7 @@ def update_rose_sxs(rose_dict, units):
     [Input("comparison-rose-data", "value"), Input("units_selector", "value")],
 )
 def update_diff_rose(rose_dict, units):
-    """Generate difference wind rose by taking difference in 
+    """Generate difference wind rose by taking difference in
     frequencies of speed/direction bins
     """
     # set up layout info first, used in event that selected station lacks
@@ -542,7 +546,10 @@ def update_diff_rose(rose_dict, units):
     station_name = luts.map_data.loc[rose_dict["sid"]]["real_name"]
 
     rose_layout = {
-        "title": dict(text="", font=dict(size=18),),
+        "title": dict(
+            text="",
+            font=dict(size=18),
+        ),
         "height": 700,
         "font": dict(family="Open Sans", size=10),
         "margin": {"l": 0, "r": 0, "b": 20, "t": 75},
@@ -650,6 +657,7 @@ def update_box_plots(sid):
 
     return go.Figure(
         layout=dict(
+            template=luts.plotly_template,
             font=dict(family="Open Sans", size=10),
             title=dict(
                 text="Average monthly wind energy potential for " + c_name,
