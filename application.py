@@ -157,6 +157,45 @@ def get_rose_calm_sxs_annotations(titles, calm):
     return calm_annotations
 
 
+def add_runway_traces(sid, fig, height):
+    """Add the runway infomation to the crosswinds figure as rectanlges"""
+
+    def get_runway(row):
+        name = row.rw_name
+        heading = row.rw_heading
+        # if heading is > 180, flip
+        if heading >= 180:
+            heading -= 180
+
+        xmin, xmax = heading - 3, heading + 3
+
+        strip = go.Scatter({
+            "x": [xmin, xmin, xmax, xmax, xmin],
+            "y": [0, height, height, 0, 0],
+            "fill": "toself",
+            "line": {"color": "black", "width": 1},
+            "fillcolor": "rgba(211,211,211,0.25)",
+            "mode": "lines",
+            "showlegend": False,
+        })
+
+        lines = go.Scatter({
+            "x": [heading, heading],
+            "y": [height * 0.01, height - (height * 0.01)],
+            "line": {"dash": "dash", "color": "black"},
+            "mode": "lines",
+            "showlegend": False,
+        })
+
+        return [strip, lines]
+
+    airport = luts.airport_meta[luts.airport_meta["sid"] == sid]
+
+    _ = [fig.add_trace(trace) for i, row in airport.iterrows() for trace in get_runway(row)] 
+
+    return fig
+
+
 @app.callback(
     Output("exceedance_plot", "figure"),
     [Input("airports-dropdown", "value"), Input("units_selector", "value")],
@@ -167,6 +206,7 @@ def update_exceedance_plot(sid, units):
 
     station_name = luts.map_data.loc[sid]["real_name"]
     title = f"Runway direction vs allowable crosswind exceedance, {station_name}"
+
     fig = px.line(
         df,
         x="direction",
@@ -179,6 +219,7 @@ def update_exceedance_plot(sid, units):
             "threshold": "Threshold",
         },
     )
+
     fig.update_layout(
         {
             "plot_bgcolor": "rgba(0, 0, 0, 0)",
@@ -189,6 +230,11 @@ def update_exceedance_plot(sid, units):
             "xaxis.linecolor": "black",
         }
     )
+
+    fig.update_yaxes(rangemode="tozero")
+
+    fig = add_runway_traces(sid, fig, df["exceedance"].max())
+    
 
     for i in [0, 1, 2]:
         fig["data"][i]["name"] = luts.exceedance_units[units][fig["data"][i]["name"]]
