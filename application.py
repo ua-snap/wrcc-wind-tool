@@ -374,7 +374,7 @@ def update_rose(sid, units, coarse):
                 "showticksuffix": "last",
                 "tickcolor": "rgba(0, 0, 0, 0)",
                 "tick0": 0,
-                "dtick": 3,
+                "dtick": [3, 6][coarse],
                 "ticklen": 10,
                 "showline": False,  # hide the dark axis line
                 "tickfont": {"color": "#444"},
@@ -605,9 +605,13 @@ def update_rose_sxs(rose_dict, units):
 
 @app.callback(
     Output("rose_diff", "figure"),
-    [Input("comparison-rose-data", "value"), Input("units_selector", "value")],
+    [
+        Input("comparison-rose-data", "value"), 
+        Input("units_selector", "value"), 
+        Input("rose-coarse", "value")
+    ],
 )
-def update_diff_rose(rose_dict, units):
+def update_diff_rose(rose_dict, units, coarse):
     """Generate difference wind rose by taking difference in
     frequencies of speed/direction bins
     """
@@ -645,7 +649,7 @@ def update_diff_rose(rose_dict, units):
                 "showticksuffix": "last",
                 "tickcolor": "rgba(0, 0, 0, 0)",
                 "tick0": 0,
-                "dtick": 1,
+                "dtick": [1, 2][coarse],
                 "ticklen": 10,
                 "showline": False,  # hide the dark axis line
                 "tickfont": {"color": "#444"},
