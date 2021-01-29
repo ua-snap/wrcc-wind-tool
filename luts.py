@@ -15,6 +15,8 @@ base_dir = Path(os.getenv("BASE_DIR"))
 airport_meta = pd.read_csv(base_dir.joinpath("airport_meta.csv"))
 # remove duplicate rows after discarding runway info to have unique locations
 map_data = airport_meta.drop(columns=["rw_name", "rw_heading"]).drop_duplicates()
+# fill in missing airport names (temporary)
+map_data["real_name"] = map_data.apply(lambda row: row["station_name"] if pd.isnull(row["real_name"]) else row["real_name"], axis=1)
 # use unique sid values in exceedance df, as it represents the less restrictive filtering
 # of data
 exceedance = pd.read_pickle(base_dir.joinpath("crosswind_exceedance.pickle"))
