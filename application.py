@@ -206,9 +206,11 @@ def add_runway_traces(sid, fig, height):
     for i, row in airport.iterrows():
         fig = add_runway(fig, row)
 
-    fig["data"][-2]["hovertemplate"] += "<extra></extra>"
+    # removes the "trace X" text for runway traces
+    for trace in fig["data"][3:]:
+        if trace["meta"]:
+            trace["hovertemplate"] += "<extra></extra>"
 
-    print(fig)
     return fig
 
 
