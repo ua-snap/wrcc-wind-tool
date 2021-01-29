@@ -239,11 +239,17 @@ def update_exceedance_plot(sid, units):
     fig.update_layout(
         {
             "plot_bgcolor": "rgba(0, 0, 0, 0)",
-            "yaxis.gridcolor": "black",
-            "yaxis.showline": True,
-            "yaxis.linecolor": "black",
-            "xaxis.showline": True,
-            "xaxis.linecolor": "black",
+            "yaxis": {
+                "gridcolor": "black",
+                "showline": True,
+                "linecolor": "black",
+                "fixedrange": True,
+            },
+            "xaxis": {
+                "showline": True,
+                "linecolor": "black",
+                "fixedrange": True,
+            },
             "font": {"size": 14}
         }
     )
