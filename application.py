@@ -175,26 +175,30 @@ def add_runway_traces(sid, fig, height):
 
         xmin, xmax = heading - 3, heading + 3
 
-        lines = go.Scatter({
-            "x": [heading, heading],
-            "y": [height * 0.01, height - (height * 0.01)],
-            "line": {"dash": "dash", "color": "black"},
-            "mode": "lines",
-            "showlegend": False,
-            "hoverinfo": "skip",
-        })
+        lines = go.Scatter(
+            {
+                "x": [heading, heading],
+                "y": [height * 0.01, height - (height * 0.01)],
+                "line": {"dash": "dash", "color": "black"},
+                "mode": "lines",
+                "showlegend": False,
+                "hoverinfo": "skip",
+            }
+        )
 
-        strip = go.Scatter({
-            "x": [xmin, xmin, xmax, xmax, xmin],
-            "y": [0, height, height, 0, 0],
-            "fill": "tozerox",
-            "line": {"color": "black", "width": 1},
-            "fillcolor": "rgba(211,211,211,0.25)",
-            "mode": "lines",
-            "showlegend": False,
-            "meta": heading,
-            "hovertemplate": "Runway heading: %{meta}°<br><br>" + name,
-        })
+        strip = go.Scatter(
+            {
+                "x": [xmin, xmin, xmax, xmax, xmin],
+                "y": [0, height, height, 0, 0],
+                "fill": "tozerox",
+                "line": {"color": "black", "width": 1},
+                "fillcolor": "rgba(211,211,211,0.25)",
+                "mode": "lines",
+                "showlegend": False,
+                "meta": heading,
+                "hovertemplate": "Runway heading: %{meta}°<br><br>" + name,
+            }
+        )
 
         fig.add_trace(strip)
         fig.add_trace(lines)
@@ -247,12 +251,8 @@ def update_exceedance_plot(sid, units):
                 "linecolor": "black",
                 "fixedrange": True,
             },
-            "xaxis": {
-                "showline": True,
-                "linecolor": "black",
-                "fixedrange": True,
-            },
-            "font": {"size": 14}
+            "xaxis": {"showline": True, "linecolor": "black", "fixedrange": True,},
+            "font": {"size": 14},
         }
     )
 
@@ -384,6 +384,51 @@ def update_rose(sid, units, coarse):
     }
 
     return {"layout": rose_layout, "data": traces}
+
+
+@app.callback(Output("wep_box", "figure"), [Input("airports-dropdown", "value")])
+def update_box_plots(sid):
+    """ Generate box plot for monthly averages """
+
+    d = mean_wep.loc[(mean_wep["sid"] == sid)]
+    c_name = luts.map_data.loc[sid]["real_name"]
+
+    return go.Figure(
+        layout=dict(
+            template=luts.plotly_template,
+            font=dict(family="Open Sans", size=14),
+            title=dict(
+                text="Average monthly wind energy potential for " + c_name,
+                font=dict(size=18, family="Open Sans"),
+                x=0.5,
+            ),
+            boxmode="group",
+            yaxis={
+                "title": "Wind energy potential (W/m2)",
+                "rangemode": "tozero",
+                "fixedrange": True,
+            },
+            height=550,
+            margin={"l": 50, "r": 50, "b": 50, "t": 50, "pad": 4},
+            xaxis=dict(
+                tickvals=list(luts.months.keys()),
+                ticktext=list(luts.months.values()),
+                fixedrange=True,
+            ),
+        ),
+        data=[
+            go.Box(
+                name="",
+                fillcolor=luts.speed_ranges["10-14"]["color"],
+                x=d.month,
+                y=d.wep,
+                meta=d.year,
+                hovertemplate="%{x} %{meta}: %{y} W/m2",
+                marker=dict(color=luts.speed_ranges["22+"]["color"]),
+                line=dict(color=luts.speed_ranges["22+"]["color"]),
+            )
+        ],
+    )
 
 
 # function to check sufficient data for side-by-side and diff? Need a invisible placeholder in the gui?
@@ -539,17 +584,6 @@ def update_rose_sxs(rose_dict, units):
         traces = [empty_trace, empty_trace]
         _ = [fig.add_trace(traces[i], row=1, col=(i + 1)) for i in [0, 1]]
 
-        # fig.add_annotation(
-        #     text=f"{station_name} does not have sufficient data for this comparison.",
-        #     xref="paper",
-        #     yref="paper",
-        #     x=0.5,
-        #     y=0.6,
-        #     showarrow=False,
-        #     bgcolor="rgba(211,211,211,0.5)",
-        #     font={"size": 22},
-        # )
-
         fig.add_annotation(rose_dict["anno_dict"])
 
         return fig
@@ -606,9 +640,9 @@ def update_rose_sxs(rose_dict, units):
 @app.callback(
     Output("rose_diff", "figure"),
     [
-        Input("comparison-rose-data", "value"), 
-        Input("units_selector", "value"), 
-        Input("rose-coarse", "value")
+        Input("comparison-rose-data", "value"),
+        Input("units_selector", "value"),
+        Input("rose-coarse", "value"),
     ],
 )
 def update_diff_rose(rose_dict, units, coarse):
@@ -620,10 +654,7 @@ def update_diff_rose(rose_dict, units, coarse):
     station_name = luts.map_data.loc[rose_dict["sid"]]["real_name"]
 
     rose_layout = {
-        "title": dict(
-            text="",
-            font=dict(size=18),
-        ),
+        "title": dict(text="", font=dict(size=18),),
         "height": 700,
         "font": dict(family="Open Sans", size=14),
         "margin": {"l": 0, "r": 0, "b": 20, "t": 75},
@@ -720,51 +751,6 @@ def update_diff_rose(rose_dict, units, coarse):
     ] = f"Change in winds from {decade1} to {decade2}, {station_name}"
 
     return {"layout": rose_layout, "data": traces}
-
-
-@app.callback(Output("wep_box", "figure"), [Input("airports-dropdown", "value")])
-def update_box_plots(sid):
-    """ Generate box plot for monthly averages """
-
-    d = mean_wep.loc[(mean_wep["sid"] == sid)]
-    c_name = luts.map_data.loc[sid]["real_name"]
-
-    return go.Figure(
-        layout=dict(
-            template=luts.plotly_template,
-            font=dict(family="Open Sans", size=14),
-            title=dict(
-                text="Average monthly wind energy potential for " + c_name,
-                font=dict(size=18, family="Open Sans"),
-                x=0.5,
-            ),
-            boxmode="group",
-            yaxis={
-                "title": "Wind energy potential (W/m2)",
-                "rangemode": "tozero",
-                "fixedrange": True,
-            },
-            height=550,
-            margin={"l": 50, "r": 50, "b": 50, "t": 50, "pad": 4},
-            xaxis=dict(
-                tickvals=list(luts.months.keys()),
-                ticktext=list(luts.months.values()),
-                fixedrange=True,
-            ),
-        ),
-        data=[
-            go.Box(
-                name="placeholder",
-                fillcolor=luts.speed_ranges["10-14"]["color"],
-                x=d.month,
-                y=d.wep,
-                meta=d.year,
-                hovertemplate="%{x} %{meta}: %{y} W/m2",
-                marker=dict(color=luts.speed_ranges["22+"]["color"]),
-                line=dict(color=luts.speed_ranges["22+"]["color"]),
-            )
-        ],
-    )
 
 
 if __name__ == "__main__":
