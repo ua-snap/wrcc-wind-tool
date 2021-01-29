@@ -221,7 +221,7 @@ def update_exceedance_plot(sid, units):
     df = exceedance.loc[exceedance["sid"] == sid]
 
     station_name = luts.map_data.loc[sid]["real_name"]
-    title = f"Runway direction vs allowable crosswind exceedance, {station_name}"
+    title = f"Runway direction vs. allowable crosswind exceedance, {station_name}"
 
     fig = px.line(
         df,
