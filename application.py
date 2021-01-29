@@ -160,24 +160,20 @@ def get_rose_calm_sxs_annotations(titles, calm):
 def add_runway_traces(sid, fig, height):
     """Add the runway infomation to the crosswinds figure as rectanlges"""
 
-    def get_runway(row):
+    def add_runway(fig, row):
         name = row.rw_name
         heading = row.rw_heading
         # if heading is > 180, flip
         if heading >= 180:
             heading -= 180
 
-        xmin, xmax = heading - 3, heading + 3
+        # use the same trace for runways with same heading, update hoverinfo
+        if fig["data"][-2]["meta"] == heading:
+            fig["data"][-2]["hovertemplate"] += f"<br>{name}"
 
-        strip = go.Scatter({
-            "x": [xmin, xmin, xmax, xmax, xmin],
-            "y": [0, height, height, 0, 0],
-            "fill": "toself",
-            "line": {"color": "black", "width": 1},
-            "fillcolor": "rgba(211,211,211,0.25)",
-            "mode": "lines",
-            "showlegend": False,
-        })
+            return fig
+
+        xmin, xmax = heading - 3, heading + 3
 
         lines = go.Scatter({
             "x": [heading, heading],
@@ -185,14 +181,34 @@ def add_runway_traces(sid, fig, height):
             "line": {"dash": "dash", "color": "black"},
             "mode": "lines",
             "showlegend": False,
+            "hoverinfo": "skip",
         })
 
-        return [strip, lines]
+        strip = go.Scatter({
+            "x": [xmin, xmin, xmax, xmax, xmin],
+            "y": [0, height, height, 0, 0],
+            "fill": "tozerox",
+            "line": {"color": "black", "width": 1},
+            "fillcolor": "rgba(211,211,211,0.25)",
+            "mode": "lines",
+            "showlegend": False,
+            "meta": heading,
+            "hovertemplate": "Runway heading: %{meta}°<br><br>" + name,
+        })
+
+        fig.add_trace(strip)
+        fig.add_trace(lines)
+
+        return fig
 
     airport = luts.airport_meta[luts.airport_meta["sid"] == sid]
 
-    _ = [fig.add_trace(trace) for i, row in airport.iterrows() for trace in get_runway(row)] 
+    for i, row in airport.iterrows():
+        fig = add_runway(fig, row)
 
+    fig["data"][-2]["hovertemplate"] += "<extra></extra>"
+
+    print(fig)
     return fig
 
 
@@ -228,13 +244,13 @@ def update_exceedance_plot(sid, units):
             "yaxis.linecolor": "black",
             "xaxis.showline": True,
             "xaxis.linecolor": "black",
+            "font": {"size": 14}
         }
     )
 
     fig.update_yaxes(rangemode="tozero")
 
     fig = add_runway_traces(sid, fig, df["exceedance"].max())
-    
 
     for i in [0, 1, 2]:
         fig["data"][i]["name"] = luts.exceedance_units[units][fig["data"][i]["name"]]
@@ -316,7 +332,7 @@ def update_rose(sid, units, coarse):
             font=dict(size=18),
         ),
         "height": 700,
-        "font": dict(family="Open Sans", size=10),
+        "font": dict(family="Open Sans", size=14),
         "margin": {"l": 0, "r": 0, "b": 20, "t": 75},
         "legend": {"orientation": "h", "x": 0, "y": 1},
         "annotations": [
@@ -447,7 +463,7 @@ def update_rose_sxs(rose_dict, units):
     subplot_args = {
         "rows": 1,
         "cols": 2,
-        "horizontal_spacing": 0.03,
+        "horizontal_spacing": 0.01,
         "specs": [[subplot_spec, subplot_spec]],
         "subplot_titles": ["", ""],
     }
@@ -459,7 +475,7 @@ def update_rose_sxs(rose_dict, units):
             tickmode="array",
             tickvals=[0, 45, 90, 135, 180, 225, 270, 315],
             ticktext=["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
-            tickfont=dict(color="#444", size=10),
+            tickfont=dict(color="#444", size=14),
             showticksuffix="last",
             showline=False,  # no boundary circles
             color="#888",  # set most colors to #888
@@ -490,8 +506,8 @@ def update_rose_sxs(rose_dict, units):
             x=0.5,
         ),
         "margin": dict(l=0, t=100, r=0, b=0),
-        "font": dict(family="Open Sans", size=10),
-        "legend": {"orientation": "h", "x": 0, "y": 1},
+        "font": dict(family="Open Sans", size=14),
+        "legend": {"orientation": "h", "x": -0.05, "y": 1},
         "height": 700,
         "paper_bgcolor": "#fff",
         "plot_bgcolor": "#fff",
@@ -597,7 +613,7 @@ def update_diff_rose(rose_dict, units):
             font=dict(size=18),
         ),
         "height": 700,
-        "font": dict(family="Open Sans", size=10),
+        "font": dict(family="Open Sans", size=14),
         "margin": {"l": 0, "r": 0, "b": 20, "t": 75},
         "legend": {"orientation": "h", "x": 0, "y": 1},
         "polar": {
@@ -673,9 +689,9 @@ def update_diff_rose(rose_dict, units):
     rose_layout["shapes"] = [
         {
             "type": "circle",
-            "x0": 0.44,
+            "x0": 0.455,
             "y0": 0.4,
-            "x1": 0.56,
+            "x1": 0.545,
             "y1": 0.6,
             "text": calm_text,
             "xref": "paper",
@@ -704,7 +720,7 @@ def update_box_plots(sid):
     return go.Figure(
         layout=dict(
             template=luts.plotly_template,
-            font=dict(family="Open Sans", size=10),
+            font=dict(family="Open Sans", size=14),
             title=dict(
                 text="Average monthly wind energy potential for " + c_name,
                 font=dict(size=18, family="Open Sans"),

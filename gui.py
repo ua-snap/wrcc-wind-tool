@@ -212,7 +212,7 @@ crosswind_intro = wrap_in_section(
     ddsih.DangerouslySetInnerHTML(
         """
 <h3 class="title is-4">Crosswind Component Calculation</h3>
-<p>Use this chart to explore how the allowable crosswind component exceedance changes with runway direction. The three thresholds represent different classes of aircraft.</p>
+<p>Use this chart to explore how the allowable crosswind component exceedance changes with runway direction. The three thresholds represent different classes of aircraft. Existing runways are superimposed, hover over corners for info.</p>
   """
     ),
     section_classes="words-block-grey interstitial",
