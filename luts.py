@@ -17,10 +17,9 @@ airport_meta = pd.read_csv(base_dir.joinpath("airport_meta.csv"))
 map_data = airport_meta.drop(columns=["rw_name", "rw_heading"]).drop_duplicates()
 # fill in missing airport names (temporary)
 map_data["real_name"] = map_data.apply(lambda row: row["station_name"] if pd.isnull(row["real_name"]) else row["real_name"], axis=1)
-# use unique sid values in exceedance df, as it represents the less restrictive filtering
-# of data
-exceedance = pd.read_pickle(base_dir.joinpath("crosswind_exceedance.pickle"))
-map_data = map_data.loc[map_data["sid"].isin(exceedance["sid"].unique())].set_index(
+# use unique sid values in roses df
+roses = pd.read_pickle(base_dir.joinpath("roses.pickle"))
+map_data = map_data.loc[map_data["sid"].isin(roses["sid"].unique())].set_index(
     "sid"
 )
 
