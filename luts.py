@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
 from pathlib import Path
+import plotly.io as pio
 
 base_dir = Path(os.getenv("BASE_DIR"))
 
@@ -17,7 +18,26 @@ map_data = airport_meta.drop(columns=["rw_name", "rw_heading"]).drop_duplicates(
 # use unique sid values in exceedance df, as it represents the less restrictive filtering
 # of data
 exceedance = pd.read_pickle(base_dir.joinpath("crosswind_exceedance.pickle"))
-map_data = map_data.loc[map_data["sid"].isin(exceedance["sid"].unique())].set_index("sid")
+map_data = map_data.loc[map_data["sid"].isin(exceedance["sid"].unique())].set_index(
+    "sid"
+)
+
+
+# Plotly format template
+plotly_template = pio.templates["simple_white"]
+axis_configs = {
+    "automargin": True,
+    "showgrid": False,
+    "showline": False,
+    "ticks": "",
+    "title": {"standoff": 0},
+    "zeroline": False,
+    "fixedrange": True,
+}
+xaxis_config = {**axis_configs, **{"tickformat": "%B"}}
+plotly_template.layout.xaxis = xaxis_config
+plotly_template.layout.yaxis = axis_configs
+
 
 # This trace is shared so we can highlight specific communities.
 map_airports_trace = go.Scattermapbox(
@@ -86,7 +106,7 @@ decades = {
 crosswind_thresholds = {
     "A-I and B-I": 10.5,
     "A-II and B-II": 13,
-    "A-III, B-III, C-I through D-III, D-I through D-III": 16
+    "A-III, B-III, C-I through D-III, D-I through D-III": 16,
 }
 
 # Common configuration for graph figures
@@ -151,23 +171,11 @@ speed_units = {
         "14-18": "6.3-8",
         "18-22": "8-9.8",
         "22+": "9.8+",
-    } 
+    },
 }
 
 exceedance_units = {
-    "mph": {
-        "12.08": "12.1 mph",
-        "14.96": "15 mph",
-        "18.41": "18.4 mph"
-    },
-    "kts": {
-        "12.08": "10.5 kts",
-        "14.96": "13 kts",
-        "18.41": "16 kts"
-    },
-    "m/s": {
-        "12.08": "5.4 m/s",
-        "14.96": "6.7 m/s",
-        "18.41": "8.2 m/s"
-    },
+    "mph": {"12.08": "12.1 mph", "14.96": "15 mph", "18.41": "18.4 mph"},
+    "kts": {"12.08": "10.5 kts", "14.96": "13 kts", "18.41": "16 kts"},
+    "m/s": {"12.08": "5.4 m/s", "14.96": "6.7 m/s", "18.41": "8.2 m/s"},
 }
