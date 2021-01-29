@@ -18,7 +18,7 @@ from plotly.subplots import make_subplots
 
 # Read data blobs and other items used from env
 base_dir = Path(os.getenv("BASE_DIR"))
-roses = pd.read_pickle(base_dir.joinpath("roses.pickle"))
+roses = luts.roses
 calms = pd.read_pickle(base_dir.joinpath("calms.pickle"))
 exceedance = pd.read_pickle(base_dir.joinpath("crosswind_exceedance.pickle"))
 mean_wep = pd.read_pickle(base_dir.joinpath("mean_wep.pickle"))
