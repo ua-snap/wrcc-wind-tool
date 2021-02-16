@@ -1,11 +1,11 @@
-"""Scrape the FAA identifier and other info from IEM and AirNAv
+"""Scrape the FAA identifier and other info from IEM and AirNav
+based on IEM ASOS identifier
 
-from AirNav.com based on IEM ASOS identifier
+Writes a complete file of station info as "airport_meta.csv"
 
-This method seems more straightforward than downloading data from FAA, 
-could not find FAA resource making use of ICAO identifiers.
-
-Writes a complete file of station info as "station_info.csv"
+Notes:
+    This method seems more straightforward than downloading data from FAA, 
+    could not find FAA resource making use of ICAO identifiers.
 """
 
 import argparse, os, requests, time
