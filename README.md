@@ -8,6 +8,7 @@ Active development!
  * `gui.py` has most user interface elements.
  * `luts.py` has shared code & lookup tables and other configuration.
  * `assets/` has images and CSS (uses [Bulma](https://bulma.io))
+ * `data/` has the preprocessed data for the app. These are tracked in git for inclusion when deploying to EB.
 
 ## Local development
 

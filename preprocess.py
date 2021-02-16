@@ -428,22 +428,20 @@ if __name__ == "__main__":
     print("Reading data")
     stations = pd.read_pickle(base_dir.joinpath("stations.pickle"))
 
-    roses_fp = base_dir.joinpath("roses.pickle")
+    roses_fp = "data/roses.pickle"
     if do_roses:
         roses = process_roses(stations, ncpus, roses_fp)
 
     if do_calms:
-        calms_fp = base_dir.joinpath("calms.pickle")
+        calms_fp = "data/calms.pickle"
         if not do_roses:
             roses = pd.read_pickle(roses_fp)
         calms = process_calms(stations, roses, calms_fp)
 
     if do_crosswinds:
-        exceedance_fp = base_dir.joinpath("crosswind_exceedance.pickle")
+        exceedance_fp = "data/crosswind_exceedance.pickle"
         crosswinds = process_crosswinds(stations, ncpus, exceedance_fp)
 
     if do_wep:
-        wep_quantiles_fp = base_dir.joinpath("mean_wep.pickle")
+        wep_quantiles_fp = "data/mean_wep.pickle"
         wep = process_wep(stations, wep_quantiles_fp)
-
-    # read and filter places data to match airports available
