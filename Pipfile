@@ -14,6 +14,8 @@ pandas = "*"
 dask = {extras = ["dataframe"],version = "*"}
 ipykernel = "*"
 requests = "*"
+scipy = "*"
+matplotlib = "*"
 
 [dev-packages]
 flask = "*"

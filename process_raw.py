@@ -8,52 +8,79 @@ import pandas as pd
 from luts import decades
 from multiprocessing import Pool
 from pathlib import Path
+from scipy.signal import find_peaks
 
 
-def filter_spikes(station, xname="sped", tname="valid", delta=30):
-    """Remove observations that look like erroneous wind speed spikes"""
-    # remove the subsequent observations after spikes
-    # allows for multiple sequential spikes 
-    # (e.g. up-down-up-down... unlikely but possible?)
-    def remove_subsequent_idx(idx):
-        k = idx[0]
-        r = []
-        for i in np.arange(idx[1:].shape[0]):
-            if (idx[i + 1] - k) == 1:
-                r.append(i + 1)
-            k = idx[i + 1]
-        
-        return idx[np.array(r)]
-    
-    # speed deltas
-    xd = abs(station[xname].values[1:] - station[xname].values[:-1])
-    # time deltas
-    td = (station[tname].values[1:] - station[tname].values[:-1]) / (10 ** 9 * 3600)
-    # potential spikes
-    pidx = np.where(xd > delta)[0]
-    # true spike indices (time difference of two hours or less)
-    try:
-        sidx = remove_subsequent_idx(pidx[td[pidx].astype(float) <= 2])
-    except IndexError:
-        sidx = pidx
-    spikes = pd.DataFrame(station.take(sidx))
-    
-    return station.drop(station.index[sidx]), spikes
+def filter_spurious(station, xname="sped", tname="ts", delta=30):
+    """Identify and remove spurious observations, 
+    returns filtered data and flagged observations"""
+    station = station.set_index(tname)
+    # ignore missing speed data
+    ws_series = station[~np.isnan(station["sped"])]["sped"]
+    # identify and remove completely obvious peaks, to help with dip detection
+    obv_peaks, _ = find_peaks(ws_series, prominence=30, threshold=50)
+    # if-else in case no obvious spikes
+    if obv_peaks.shape[0] != 0:
+        obv_spikes = ws_series[obv_peaks]
+        ws_series = ws_series.drop(obv_spikes.index)
+    else:
+        obv_spikes = pd.Series()
+
+    # invert series, identify dips using less strict criteria
+    dip_peaks, _ = find_peaks(ws_series * -1, prominence=30, threshold=35)
+    # if-else in case no dips found
+    if dip_peaks.shape[0] != 0:
+        dips = ws_series[dip_peaks]
+        ws_series = ws_series.drop(dips.index)
+    else:
+        dips = pd.Series()
+
+    # identify less obvious peaks
+    peaks, properties = find_peaks(ws_series, prominence=25, width=(None, 2))
+    # combine with obvious peaks if present
+    if peaks.shape[0] != 0:
+        # condition on width_heights property to reduce sensitivty (see ancillary/raw_qc.ipynb)
+        spikes = pd.concat(
+            [obv_spikes, ws_series[peaks[properties["width_heights"] >= 18]]]
+        )
+    else:
+        spikes = pd.concat([obv_spikes, pd.Series()])
+
+    # subset the station data to keep these flagged observations,
+    # then remove from station data
+    if dips.size != 0:
+        dips = station.loc[dips.index]
+        station = station.drop(dips.index)
+    else:
+        # take empty slice
+        dips = station[station["station"] == "cats"]
+
+    if spikes.size != 0:
+        # subset station data frame for spikes and dips
+        spikes = station.loc[spikes.index]
+        station = station.drop(spikes.index)
+    else:
+        # take empty slice
+        dips = station[station["station"] == "dogs"]
+
+    return station.reset_index(), spikes.reset_index(), dips.reset_index()
 
 
 def filter_to_hour(station):
     """Aggregate observations to nearest hour"""
     # METAR reports are typically recorded close to a clock hour, either
     # on the hour, or something like 1:07, or 12:55, etc. Instead of aggregating
-    # multiple observations, in this case other SPECIals recorded, just take 
+    # multiple observations, in this case other SPECIals recorded, just take
     # the observation nearest to the hour.
-    # (this represents the most likely "routine" METAR record), 
-    # and could help avoid potential sampling bias from SPECIals 
+    # (this represents the most likely "routine" METAR record),
+    # and could help avoid potential sampling bias from SPECIals
     # done by finding record with minimum timedelta from hour
     station["ts"] = station["valid"].dt.round("H")
     station["delta_dt"] = abs((station["ts"] - station["valid"]))
     min_dt_station = (
-        station.groupby("ts").agg(min_delta_dt=pd.NamedAgg("delta_dt", "min")).reset_index()
+        station.groupby("ts")
+        .agg(min_delta_dt=pd.NamedAgg("delta_dt", "min"))
+        .reset_index()
     )
 
     station = pd.merge(station, min_dt_station)
@@ -84,20 +111,25 @@ def read_and_process_csv(fp):
     station = pd.read_csv(fp, header=0, na_values="M", dtype=dtype_dict)
     station["valid"] = pd.to_datetime(station["valid"].values)
 
-    # remove observations with wind speeds in excess of 100 mph
-    station = station[station["sped"] < 100]
-    # filter out spikes of 30mph or greater
-    station, spikes = filter_spikes(station)
-
+    # Filter out ridiculously fast spikes
+    # 100mph may be too low, use 110
+    stations = station = station[station["sped"] < 110]
     # Filter to hourly obs closest to "on the hour"
     station = filter_to_hour(station)
+    # filter out spikes and dips using scipy.signal.find_peaks,
+    # keep those obs just in case
+    station, spikes, dips = filter_spurious(station)
 
     # handle observations with erroneous combination of direction/speed
     # The case where speed is 0 and direction is not is and invalid measurement.
     # Not common (<600 for entire dataset), and there is no way to know whether the error was
     # in speed or direction measurement. Drop them.
     station = station.drop(
-        station[(station["sped"] == 0) & (~np.isnan(station["drct"])) & (station["drct"] != 0)].index
+        station[
+            (station["sped"] == 0)
+            & (~np.isnan(station["drct"]))
+            & (station["drct"] != 0)
+        ].index
     )
     # As of now, not handling cases where speed is nonzero and direction is zero.
     # There are 100 times as many of these as the first case. Instead of throwing these away,
@@ -119,7 +151,7 @@ def read_and_process_csv(fp):
         dyears = list(range(dyear, dyear + 10))
         station.loc[station["ts"].dt.year.isin(dyears), "decade"] = decades[dyear]
 
-    return (station, spikes)
+    return (station, spikes, dips)
 
 
 def run_read_and_process(fps, ncpus):
@@ -142,10 +174,15 @@ def run_read_and_process(fps, ncpus):
 
     stations = pd.concat([out_tuple[0] for out_tuple in out], ignore_index=True)
     spikes = pd.concat([out_tuple[1] for out_tuple in out], ignore_index=True)
+    dips = pd.concat([out_tuple[2] for out_tuple in out], ignore_index=True)
 
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
 
-    return stations.rename(columns={"station": "sid", "sped": "ws", "drct": "wd"}), spikes
+    return (
+        stations.rename(columns={"station": "sid", "sped": "ws", "drct": "wd"}),
+        spikes,
+        dips,
+    )
 
 
 def main():
@@ -168,18 +205,26 @@ def main():
     raw_dir = base_dir.joinpath("raw/iem")
     raw_fps = list(raw_dir.glob("*"))
 
+    # ignore stations identified as insufficient in raw_qc.ipynb
+    discard = pd.read_csv(base_dir.joinpath("discard.csv"))
+    raw_fps = [
+        fp for fp in raw_fps if str(fp).split("_")[-2] not in discard["sid"].values
+    ]
+
     out_fp = base_dir.joinpath("stations.pickle")
     spikes_fp = base_dir.joinpath("raw_spikes.pickle")
+    dips_fp = base_dir.joinpath("raw_dips.pickle")
 
     # read data
-    stations, spikes = run_read_and_process(raw_fps, ncpus)
-    # discard stations with
+    stations, spikes, dips = run_read_and_process(raw_fps, ncpus)
 
     print(f"Writing processed data to {out_fp}")
     print(f"Writing filtered spikes data to {spikes_fp}", end="...")
+    print(f"Writing filtered dips data to {dips_fp}", end="...")
     tic = time.perf_counter()
     stations.to_pickle(out_fp)
     spikes.to_pickle(spikes_fp)
+    dips.to_pickle(dips_fp)
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
 
     return None
