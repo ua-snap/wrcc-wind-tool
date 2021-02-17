@@ -57,8 +57,12 @@ header = ddsih.DangerouslySetInnerHTML(
 <nav class="navbar" role="navigation" aria-label="main navigation">
 
   <div class="navbar-brand">
-    <a class="navbar-item" href="https://uaf-snap.org">
-      <img src="{path_prefix}assets/snap_acronym.svg">
+    <a class="navbar-item" href="https://wrcc.dri.edu/">
+      <img src="{path_prefix}assets/NOAARCC.svg">
+    </a>
+
+    <a class="navbar-item" href="https://www.dri.edu/">
+      <img src="{path_prefix}assets/DRI.svg">
     </a>
 
     <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
