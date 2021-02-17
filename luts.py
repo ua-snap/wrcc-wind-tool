@@ -8,20 +8,28 @@ import plotly.graph_objs as go
 from pathlib import Path
 import plotly.io as pio
 
-base_dir = Path(os.getenv("BASE_DIR"))
-
 # need to get map data ready here first for use in gui
 # need to filter to airports meeting minimum data requirements
-airport_meta = pd.read_csv(base_dir.joinpath("airport_meta.csv"))
-# remove duplicate rows after discarding runway info to have unique locations
-map_data = airport_meta.drop(columns=["rw_name", "rw_heading"]).drop_duplicates()
-# fill in missing airport names (temporary)
-map_data["real_name"] = map_data.apply(lambda row: row["station_name"] if pd.isnull(row["real_name"]) else row["real_name"], axis=1)
-# use unique sid values in roses df
-roses = pd.read_pickle(base_dir.joinpath("roses.pickle"))
-map_data = map_data.loc[map_data["sid"].isin(roses["sid"].unique())].set_index(
-    "sid"
+airport_meta = pd.read_csv("data/airport_meta.csv").set_index("sid")
+# load manually-scraped info to update these metadata with
+airport_meta = (
+    pd.read_csv("data/meta_amend.csv")
+    .set_index("sid")
+    .combine_first(airport_meta)
+    .reset_index()
 )
+
+# remove duplicate rows after discarding runway info to have unique locations
+map_data = (
+    airport_meta.drop(columns=["rw_name", "rw_heading"])
+    .drop_duplicates()
+    .set_index("sid")
+)
+# fill in missing airport names (temporary)
+# map_data["real_name"] = map_data.apply(lambda row: row["station_name"] if pd.isnull(row["real_name"]) else row["real_name"], axis=1)
+# use only the unique sid values in roses df
+roses = pd.read_pickle("data/roses.pickle")
+map_data = map_data.loc[map_data.index.isin(roses["sid"].unique())]
 
 
 # Plotly format template
