@@ -1,8 +1,11 @@
 """Pre-process station data for app ingest"""
 
+# hacky, done to alllow import from luts.py in app dir
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # pylint: disable=all
 import argparse, math, os, time
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -107,6 +110,7 @@ def chunk_to_rose(station):
                         "count": count,
                         "frequency": frequency,
                         "decade": station["decade"].iloc[0],
+                        "month": station["month"].iloc[0],
                         "coarse": coarse,
                     },
                     ignore_index=True,
@@ -156,21 +160,33 @@ def process_roses(stations, ncpus, roses_fp):
     summary_stations = stations[stations["sid"].isin(keep_sids)].copy()
     # Set the decade column to "none" to indicate these are for all available data
     summary_stations["decade"] = "none"
+    # set month column to 0 for annual rose data
+    summary_stations["month"] = 0
+    # drop calms for chunking to rose
+    summary_stations = summary_stations[summary_stations["wd"] != 0].reset_index(drop=True)
+
     # create summary rose data
     # break out into df by station for multithreading
     station_dfs = [df for sid, df in summary_stations.groupby("sid")]
-    # drop calms
-    station_dfs = [df[df["wd"] != 0].reset_index(drop=True) for df in station_dfs]
-    with Pool(ncpus) as pool:
-        rose_dfs = pool.map(chunk_to_rose, station_dfs)
 
-    summary_roses = pd.concat(rose_dfs)
+    with Pool(ncpus) as pool:
+        summary_roses = pd.concat(pool.map(chunk_to_rose, station_dfs))
 
     print(f"Summary roses done, {round(time.perf_counter() - tic, 2)}s.")
     tic = time.perf_counter()
 
+    # now assign actual month, break up by month and station and re-process
+    summary_stations["month"] = summary_stations["ts"].dt.month
+    station_dfs = [df for items, df in summary_stations.groupby(["sid", "month"])]
+
+    with Pool(ncpus) as pool:
+        monthly_roses = pd.concat(pool.map(chunk_to_rose, station_dfs))
+
+    print(f"Monthly summary roses done, {round(time.perf_counter() - tic, 2)}s.")
+    tic = time.perf_counter()
+
     # now focus on rose data for stations that will allow wind rose comparison
-    # filter out stations where first obs is younger than 1991-01-01
+    # filter out stations where first obs is more recent than 1991-01-01
     keep_sids = min_ts[min_ts < pd.to_datetime("1991-01-01")].index.values
     stations = stations[stations["sid"].isin(keep_sids)]
 
@@ -180,6 +196,8 @@ def process_roses(stations, ncpus, roses_fp):
     # rose_data = pd.DataFrame(columns=proc_cols)
 
     # break out into df by station for multithreading
+    # add 0 for month column first
+    stations["month"] = 0
     station_dfs = [df for sid, df in stations.groupby("sid")]
 
     # first, subset this list to stations where there is at least sufficient data for
@@ -187,11 +205,13 @@ def process_roses(stations, ncpus, roses_fp):
     # it's there for the 2010's!)
     with Pool(ncpus) as pool:
         keep_list = pool.map(check_sufficient_data, station_dfs)
+
     # Remove the stations lacking sufficient 90s data
     station_dfs = [df for df, keep in zip(station_dfs, keep_list) if keep]
 
     # break worthy stations up by decade
     # pass "False" for prelim arg to avoid filtering on 1990's
+    # check again for sufficient data, for each decade
     station_dfs = [
         (decade_df, False)
         for station_df in station_dfs
@@ -199,6 +219,7 @@ def process_roses(stations, ncpus, roses_fp):
     ]
     with Pool(ncpus) as pool:
         keep_list = pool.starmap(check_sufficient_data, station_dfs)
+
     # again, remove station / decade combos lacking sufficient data
     station_dfs = [df[0] for df, keep in zip(station_dfs, keep_list) if keep]
 
@@ -206,10 +227,9 @@ def process_roses(stations, ncpus, roses_fp):
     # filter out calms
     station_dfs = [df[df["wd"] != 0].reset_index(drop=True) for df in station_dfs]
     with Pool(ncpus) as pool:
-        rose_dfs = pool.map(chunk_to_rose, station_dfs)
+        compare_roses = pd.concat(pool.map(chunk_to_rose, station_dfs))
 
-    compare_roses = pd.concat(rose_dfs)
-    roses = pd.concat([summary_roses, compare_roses])
+    roses = pd.concat([summary_roses, monthly_roses, compare_roses])
 
     # concat and pickle it
     roses.to_pickle(roses_fp)
@@ -247,8 +267,23 @@ def process_calms(stations, roses, calms_fp):
     calms.columns = ["sid", "total", "calm"]
     calms = calms.assign(percent=round(calms["calm"] / calms["total"], 3) * 100)
     calms["decade"] = "none"
-    # re-order to for concat below
-    calms = calms[["sid", "decade", "total", "calm", "percent"]]
+    calms["month"] = 0
+    # re-order for concat below
+    calms = calms[["sid", "month", "decade", "total", "calm", "percent"]]
+
+    # next, process calms for all months for the same stations above
+    stations["month"] = stations["ts"].dt.month
+    monthly_calms = stations.groupby(["sid", "month"]).size().reset_index()
+
+    # keep rows where speed == 0 (calm)
+    d = stations[(stations["ws"] == 0)]
+    d = d.groupby(["sid", "month"]).size().reset_index()
+    monthly_calms = monthly_calms.merge(d, on=["sid", "month"])
+    monthly_calms.columns = ["sid", "month", "total", "calm"]
+    monthly_calms = monthly_calms.assign(percent=round(monthly_calms["calm"] / monthly_calms["total"], 3) * 100)
+    monthly_calms["decade"] = "none"
+    # re-order for concat below
+    monthly_calms = monthly_calms[["sid", "month", "decade", "total", "calm", "percent"]]
 
     # repeat for comparison rose calms (include decade grouping)
     # filter stations to those with comparison rose data
@@ -263,9 +298,11 @@ def process_calms(stations, roses, calms_fp):
     compare_calms = compare_calms.assign(
         percent=round(compare_calms["calm"] / compare_calms["total"], 3) * 100
     )
+    compare_calms["month"] = 0
+    compare_calms = compare_calms[["sid", "month", "decade", "total", "calm", "percent"]]
 
     # concat the two calms data sources together
-    calms = pd.concat([calms, compare_calms])
+    calms = pd.concat([calms, monthly_calms, compare_calms])
 
     # remove remaining decades not present in station roses data
     sid_decades = roses["sid"] + roses["decade"]

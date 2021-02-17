@@ -320,15 +320,13 @@ def get_rose_traces(d, traces, units, showlegend=False, lines=False):
 def update_rose(sid, units, coarse):
     """Generate cumulative wind rose for selected airport"""
     station_name = luts.map_data.loc[sid]["real_name"]
-    station_rose = roses.loc[(roses["sid"] == sid) & (roses["coarse"] == coarse)]
+    station_rose = roses.loc[(roses["sid"] == sid) & (roses["coarse"] == coarse) & (roses["month"] == 0)]
 
     traces = []
 
     get_rose_traces(station_rose, traces, units, True)
     # Compute % calm, use this to modify the hole size
-    c = calms.loc[(calms["sid"] == sid) & (calms["decade"] == "none")]
-    # c_mean = c.mean()
-    # c_mean = int(round(c_mean["percent"]))
+    c = calms.loc[(calms["sid"] == sid) & (calms["decade"] == "none") & (calms["month"] == 0)]
 
     calm = int(round(c["percent"].values[0]))
 
@@ -383,6 +381,165 @@ def update_rose(sid, units, coarse):
     }
 
     return {"layout": rose_layout, "data": traces}
+
+
+def get_rose_calm_month_annotations(titles, calm):
+    """
+    Return a list of correctly-positioned %calm indicators
+    for the monthly wind rose charts.
+    Take the already-generated list of titles and use
+    that pixel geometry to position the %calm info.
+    """
+    calm_annotations = copy.deepcopy(titles)
+
+    k = 0
+    for anno in calm_annotations:
+        anno["y"] = anno["y"] - 0.1225
+        anno["font"] = {"color": "#000", "size": 10}
+        calm_text = str(int(round(calm.iloc[k]["percent"] * 100))) + "%"
+        if calm.iloc[k]["percent"] > 0.2:
+            # If there's enough room, add the "calm" text fragment
+            calm_text += " calm"
+
+        anno["text"] = calm_text
+        k += 1
+
+    return calm_annotations
+
+
+@app.callback(
+    Output("rose_monthly", "figure"),
+    [
+        Input("airports-dropdown", "value"),
+        Input("units_selector", "value"),
+        Input("rose-coarse", "value"),
+    ],
+)
+def update_rose_monthly(sid, units, coarse):
+    """
+    Create a grid of subplots for all monthyl wind roses.
+    """
+    station_name = luts.map_data.loc[sid]["real_name"]
+    station_rose = roses.loc[(roses["sid"] == sid) & (roses["coarse"] == coarse)]
+
+    # t = top margin in % of figure.
+    subplot_spec = dict(type="polar", t=0.01)
+    fig = make_subplots(
+        rows=4,
+        cols=3,
+        horizontal_spacing=0.03,
+        vertical_spacing=0.04,
+        specs=[
+            [subplot_spec, subplot_spec, subplot_spec],
+            [subplot_spec, subplot_spec, subplot_spec],
+            [subplot_spec, subplot_spec, subplot_spec],
+            [subplot_spec, subplot_spec, subplot_spec],
+        ],
+        subplot_titles=list(luts.months.values()),
+    )
+
+    max_axes = pd.DataFrame()
+    month = 1
+    for i in range(1, 5):
+        for j in range(1, 4):
+            if_show_legend = month == 1  # only show the first legend
+            traces = []
+            d = station_rose[station_rose["month"] == month]
+            max_axes = max_axes.append(
+                get_rose_traces(d, traces, month, if_show_legend), ignore_index=True
+            )
+            for trace in traces:
+                fig.add_trace(trace, row=i, col=j)
+            month += 1
+
+    # Determine maximum r-axis and r-step.
+    # Adding one and using floor(/2.5) was the
+    # result of experimenting with values that yielded
+    # about 3 steps in most cases, with a little headroom
+    # for the r-axis outer ring.
+    rmax = max_axes.max()["frequency"] + 1
+    rstep = math.floor(rmax / 2.5)
+
+    # Apply formatting to subplot titles,
+    # which are actually annotations.
+    for i in fig["layout"]["annotations"]:
+        i["y"] = i["y"] + 0.01
+        i["font"] = dict(size=12, color="#444")
+        i["text"] = "<b>" + i["text"] + "</b>"
+
+    # Generate calms.  Subset by community, re-index
+    # for easy access, preprocess percent hole size,
+    # drop unused columns.
+    c = calms.loc[(calms["sid"] == sid) & (calms["month"] != 0)]
+    c = c.reset_index()
+    c = c.assign(percent=c["percent"] / 100)
+
+    # Get calms as annotations, then merge
+    # them into the subgraph title annotations
+    fig["layout"]["annotations"] = fig["layout"][
+        "annotations"
+    ] + get_rose_calm_month_annotations(fig["layout"]["annotations"], c)
+
+    polar_props = dict(
+        bgcolor="#fff",
+        angularaxis=dict(
+            tickmode="array",
+            tickvals=[0, 45, 90, 135, 180, 225, 270, 315],
+            ticktext=["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+            tickfont=dict(color="#444", size=10),
+            showticksuffix="last",
+            showline=False,  # no boundary circles
+            color="#888",  # set most colors to #888
+            gridcolor="#efefef",
+            rotation=90,  # align compass to north
+            direction="clockwise",  # degrees go clockwise
+        ),
+        radialaxis=dict(
+            color="#888",
+            gridcolor="#efefef",
+            tickangle=0,
+            range=[0, rmax],
+            tick0=1,
+            dtick=rstep,
+            ticksuffix="%",
+            showticksuffix="last",
+            showline=False,  # hide the dark axis line
+            tickfont=dict(color="#444"),
+        ),
+    )
+
+    start_year = max(pd.to_datetime(luts.map_data.loc[sid]["begints"]).year, 1980)
+    fig.update_layout(
+        title=dict(
+            text=f"Monthly Wind Speed/Direction Distribution for {station_name}, {start_year}-present",
+            font=dict(family="Open Sans", size=18),
+            x=0.5,
+        ),
+        margin=dict(l=0, t=100, r=0, b=0),
+        font=dict(family="Open Sans", size=10),
+        legend=dict(x=0, y=0, orientation="h"),
+        height=1700,
+        paper_bgcolor="#fff",
+        plot_bgcolor="#fff",
+        # We need to explicitly define the rotations
+        # we need for each named subplot.
+        # TODO is there a more elegant way to
+        # generate this list of things?
+        polar1={**polar_props, **{"hole": c.iloc[0]["percent"]}},
+        polar2={**polar_props, **{"hole": c.iloc[1]["percent"]}},
+        polar3={**polar_props, **{"hole": c.iloc[2]["percent"]}},
+        polar4={**polar_props, **{"hole": c.iloc[3]["percent"]}},
+        polar5={**polar_props, **{"hole": c.iloc[4]["percent"]}},
+        polar6={**polar_props, **{"hole": c.iloc[5]["percent"]}},
+        polar7={**polar_props, **{"hole": c.iloc[6]["percent"]}},
+        polar8={**polar_props, **{"hole": c.iloc[7]["percent"]}},
+        polar9={**polar_props, **{"hole": c.iloc[8]["percent"]}},
+        polar10={**polar_props, **{"hole": c.iloc[9]["percent"]}},
+        polar11={**polar_props, **{"hole": c.iloc[10]["percent"]}},
+        polar12={**polar_props, **{"hole": c.iloc[11]["percent"]}},
+    )
+
+    return fig
 
 
 @app.callback(Output("wep_box", "figure"), [Input("airports-dropdown", "value")])

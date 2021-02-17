@@ -208,6 +208,24 @@ wind_rose_section = wrap_in_section(
     )
 )
 
+monthly_wind_rose_intro = wrap_in_section(
+    ddsih.DangerouslySetInnerHTML(
+        """
+<p>These wind roses are similar to the one shown above, except data are separated by month. Compare the roses to see how wind direction and speed change throughout the year.</p>
+"""
+    ),
+    section_classes="words-block-grey",
+    container_classes="content is-size-5",
+)
+
+monthly_wind_rose_section = wrap_in_section(
+    dcc.Graph(
+        id="rose_monthly",
+        figure=go.Figure(),
+        config=luts.fig_configs,
+    )
+)
+
 crosswind_intro = wrap_in_section(
     ddsih.DangerouslySetInnerHTML(
         """
@@ -344,6 +362,8 @@ layout = html.Div(
         map_selector_section,
         wind_rose_intro,
         wind_rose_section,
+        monthly_wind_rose_intro,
+        monthly_wind_rose_section,
         crosswind_intro,
         crosswind_section,
         wind_energy_intro,
