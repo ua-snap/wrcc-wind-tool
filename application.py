@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
 import plotly.express as px
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from gui import layout, path_prefix
 from pathlib import Path
 from plotly.subplots import make_subplots
@@ -111,10 +111,19 @@ def update_place_dropdown(selected_on_map):
     return "PAFA"
 
 
-@app.callback(Output("map", "figure"), [Input("airports-dropdown", "value")])
-def update_selected_airport_on_map(sid):
+@app.callback(
+    Output("map", "figure"),
+    [
+        Input("airports-dropdown", "value"),
+        Input("map", "relayoutData"),
+        State("map", "figure"),
+    ],
+)
+def update_selected_airport_on_map(sid, relayout, map_state):
     """ Draw a second trace on the map with one community highlighted. """
-    return {
+    # print(sid)
+
+    default_map_data = {
         "data": [
             luts.map_airports_trace,
             go.Scattermapbox(
@@ -129,6 +138,29 @@ def update_selected_airport_on_map(sid):
         ],
         "layout": luts.map_layout,
     }
+
+    # this section handles zoom restriction.
+    try:
+        # if station hasn't changed, check zoom level and adjust as necessary
+        if (
+            sid
+            == luts.map_data.loc[
+                luts.map_data["real_name"] == map_state["data"][1]["text"]
+            ].index[0]
+        ):
+            if relayout["mapbox.zoom"] < 2.3:
+                return default_map_data
+            elif relayout["mapbox.zoom"] > 9:
+                map_state["layout"]["mapbox"]["zoom"] = 8
+                return map_state
+            return map_state
+        # new community, reset map
+        else:
+            return default_map_data
+
+    # exception occurs on app loading
+    except:
+        return default_map_data
 
 
 def get_rose_calm_sxs_annotations(titles, calm):
@@ -320,13 +352,17 @@ def get_rose_traces(d, traces, units, showlegend=False, lines=False):
 def update_rose(sid, units, coarse):
     """Generate cumulative wind rose for selected airport"""
     station_name = luts.map_data.loc[sid]["real_name"]
-    station_rose = roses.loc[(roses["sid"] == sid) & (roses["coarse"] == coarse) & (roses["month"] == 0)]
+    station_rose = roses.loc[
+        (roses["sid"] == sid) & (roses["coarse"] == coarse) & (roses["month"] == 0)
+    ]
 
     traces = []
 
     get_rose_traces(station_rose, traces, units, True)
     # Compute % calm, use this to modify the hole size
-    c = calms.loc[(calms["sid"] == sid) & (calms["decade"] == "none") & (calms["month"] == 0)]
+    c = calms.loc[
+        (calms["sid"] == sid) & (calms["decade"] == "none") & (calms["month"] == 0)
+    ]
 
     calm = int(round(c["percent"].values[0]))
 
