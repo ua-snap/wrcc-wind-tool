@@ -146,12 +146,10 @@ def main():
     args = parser.parse_args()
     ncpus = args.ncpus
 
-    base_dir = Path(os.getenv("BASE_DIR"))
-
     meta = scrape_asos_meta()
     meta = run_scrape_airnav(meta, ncpus)
 
-    out_fp = base_dir.joinpath("airport_meta.csv")
+    out_fp = "data/airport_meta.csv"
     meta.to_csv(out_fp, index=False)
 
     print(f"Airport metadata saved to to {out_fp}")
