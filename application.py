@@ -148,10 +148,11 @@ def update_selected_airport_on_map(sid, relayout, map_state):
                 luts.map_data["real_name"] == map_state["data"][1]["text"]
             ].index[0]
         ):
-            if relayout["mapbox.zoom"] < 2.3:
+            if relayout["mapbox.zoom"] < 2:
+                print(default_map_data)
                 return default_map_data
-            elif relayout["mapbox.zoom"] > 9:
-                map_state["layout"]["mapbox"]["zoom"] = 8
+            elif relayout["mapbox.zoom"] > 10:
+                map_state["layout"]["mapbox"]["zoom"] = 9
                 return map_state
             return map_state
         # new community, reset map
@@ -431,7 +432,7 @@ def get_rose_calm_month_annotations(titles, calm):
     k = 0
     for anno in calm_annotations:
         anno["y"] = anno["y"] - 0.1225
-        anno["font"] = {"color": "#000", "size": 10}
+        anno["font"] = {"color": "#000", "size": 12}
         calm_text = str(int(round(calm.iloc[k]["percent"] * 100))) + "%"
         if calm.iloc[k]["percent"] > 0.2:
             # If there's enough room, add the "calm" text fragment
@@ -500,7 +501,7 @@ def update_rose_monthly(sid, units, coarse):
     # which are actually annotations.
     for i in fig["layout"]["annotations"]:
         i["y"] = i["y"] + 0.01
-        i["font"] = dict(size=12, color="#444")
+        i["font"] = dict(size=14, color="#444")
         i["text"] = "<b>" + i["text"] + "</b>"
 
     # Generate calms.  Subset by community, re-index
@@ -522,7 +523,7 @@ def update_rose_monthly(sid, units, coarse):
             tickmode="array",
             tickvals=[0, 45, 90, 135, 180, 225, 270, 315],
             ticktext=["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
-            tickfont=dict(color="#444", size=10),
+            tickfont=dict(color="#444", size=12),
             showticksuffix="last",
             showline=False,  # no boundary circles
             color="#888",  # set most colors to #888
@@ -552,8 +553,8 @@ def update_rose_monthly(sid, units, coarse):
             x=0.5,
         ),
         margin=dict(l=0, t=100, r=0, b=0),
-        font=dict(family="Open Sans", size=10),
-        legend=dict(x=0, y=0, orientation="h"),
+        font=dict(family="Open Sans", size=12),
+        legend=dict(x=0, y=0, orientation="h", font={"size": 14}),
         height=1700,
         paper_bgcolor="#fff",
         plot_bgcolor="#fff",
