@@ -266,9 +266,10 @@ def update_exceedance_plot(sid, units):
         x="direction",
         y="exceedance",
         color="threshold",
+        color_discrete_sequence=["#DC267F", "#FFB000", "#648FFF"],
         title=title,
         labels={
-            "direction": "Runway direction (degrees)",
+            "direction": "Runway direction (degrees from true north)",
             "exceedance": "Exceedance frequency (%)",
             "threshold": "Threshold",
         },
@@ -276,7 +277,8 @@ def update_exceedance_plot(sid, units):
 
     fig.update_layout(
         {
-            "plot_bgcolor": "rgba(0, 0, 0, 0)",
+            "plot_bgcolor": "#fff",
+            "paper_bgcolor": luts.background_color,
             "yaxis": {
                 "gridcolor": "black",
                 "showline": True,
@@ -415,6 +417,7 @@ def update_rose(sid, units, coarse):
             },
             "hole": calm / 100,
         },
+        "paper_bgcolor": luts.background_color,
     }
 
     return {"layout": rose_layout, "data": traces}
@@ -556,8 +559,10 @@ def update_rose_monthly(sid, units, coarse):
         font=dict(family="Open Sans", size=12),
         legend=dict(x=0, y=0, orientation="h", font={"size": 14}),
         height=1700,
-        paper_bgcolor="#fff",
-        plot_bgcolor="#fff",
+        # paper_bgcolor="#fff",
+        # plot_bgcolor="#fff",
+        paper_bgcolor=luts.background_color,
+        plot_bgcolor=luts.background_color,
         # We need to explicitly define the rotations
         # we need for each named subplot.
         # TODO is there a more elegant way to
@@ -608,6 +613,8 @@ def update_box_plots(sid):
                 ticktext=list(luts.months.values()),
                 fixedrange=True,
             ),
+            plot_bgcolor=luts.background_color,
+            paper_bgcolor=luts.background_color,
         ),
         data=[
             go.Box(
@@ -751,12 +758,12 @@ def update_rose_sxs(rose_dict, units):
             font=dict(family="Open Sans", size=18),
             x=0.5,
         ),
-        "margin": dict(l=0, t=100, r=0, b=0),
+        "margin": dict(l=0, t=100, r=0, b=20),
         "font": dict(family="Open Sans", size=14),
         "legend": {"orientation": "h", "x": -0.05, "y": 1},
-        "height": 700,
-        "paper_bgcolor": "#fff",
-        "plot_bgcolor": "#fff",
+        "height": 650,
+        "paper_bgcolor": luts.background_color,
+        "plot_bgcolor": luts.background_color,
         # We need to explicitly define the rotations
         # we need for each named subplot.
         # TODO is there a more elegant way to
@@ -880,6 +887,8 @@ def update_diff_rose(rose_dict, units, coarse):
             },
             "hole": 0.2,
         },
+        #"plot_bgcolor": luts.background_color,
+        "paper_bgcolor": luts.background_color,
     }
 
     try:

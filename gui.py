@@ -360,6 +360,7 @@ footer = html.Footer(
 )
 
 layout = html.Div(
+    style={"backgroundColor": luts.background_color},
     children=[
         header,
         about,
