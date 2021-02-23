@@ -5,45 +5,56 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # pylint: disable=all
-import argparse, math, os, time
+import argparse, math, time
 import numpy as np
 import pandas as pd
 from datetime import datetime
 from luts import speed_ranges, decades
 from multiprocessing import Pool
 from pathlib import Path
+from random import choice
+from scipy.stats import ks_2samp
 
 
-def check_sufficient_data(station, prelim=True, r1=0.25, r2=0.75):
-    """Check presence of sufficient hourly time series data 
-    against some thresholds
+def check_sufficient_comparison_rose_data(station, r1=0.25, r2=0.75):
+    """ check sufficient data for a single station, and return
+    the station data for the 2010s and the oldest decade available 
+    between 80s and 90s
 
     Args:
-        station (pandas.DataFrame): Station DataFrame, either all data (if prelim=True) or 
-        subsetted to decade to test
+        station (pandas.DataFrame): Station DataFrame
         r1 (float): daily observation threshold (proportion)
         r2 (float): total sufficient day threshold (proportion)
     
     Returns:
-        True if daily observation threshold is met for total sufficient day threshold
-        proportion of days; otherwise, False
+        DataFrame of station data filtered to first and last decade 
+        with sufficient data if available. Otherwise, None.
 
     """
-    # This is done to test if a station should even be considered for the
-    # comparison wind rose processing
-    if prelim:
-        station = station[station["decade"] == "1990-1999"]
-    # if no 90s data, return False to ignore
-    try:
-        dyear = int(str(station["ts"].dt.year.values[0])[:3] + "0")
-    except IndexError:
-        return False
 
-    ndays = (
-        pd.to_datetime(f"{dyear + 9}-12-31") - pd.to_datetime(f"{dyear}-01-01")
-    ).days
+    def is_sufficient(df, r1, r2):
+        """Helper function to check if there sufficient sampling in a time series"""
+        dyear = int(str(df["ts"].dt.year.values[0])[:3] + "0")
+        ndays = (
+            pd.to_datetime(f"{dyear + 9}-12-31") - pd.to_datetime(f"{dyear}-01-01")
+        ).days
+        return (df.ts.dt.date.value_counts() / 24 > r1).sum() / ndays > r2
 
-    return (station.ts.dt.date.value_counts() / 24 > r1).sum() / ndays > r2
+    station = {decade: df for decade, df in station.groupby("decade")}
+    decades = list(station.keys())
+    if "2010-2019" not in decades:
+        return None
+    else:
+        recent_data = station["2010-2019"]
+        if is_sufficient(recent_data, r1, r2):
+            old_decades = ["1980-1989", "1990-1999"]
+            decades = [decade for decade in old_decades if decade in decades]
+            for decade in decades:
+                if is_sufficient(station[decade], r1, r2):
+                    return pd.concat([station[decade], station["2010-2019"]])
+            return None  # not sufficient data in old decade(s)
+        else:
+            return None  # insufficient 2010s data
 
 
 def chunk_to_rose(station):
@@ -123,7 +134,90 @@ def chunk_to_rose(station):
     return accumulator
 
 
-def process_roses(stations, ncpus, roses_fp):
+def adjust_sampling(station):
+    """Try to achieve sampling parity based on Kolomogrov-Smirnov
+    test on hour-of-day sampling between two decades to be compared.
+    Iteratively removes observations until sampling parity is achieved
+    based on p-value of KS test. 
+
+    Returns a DataFrame of station data with discarded observations,
+    and a dataframe of those observations"""
+
+    # do initial check on hour-of-year sampling symmetry between decades
+    # determine hour of year and split up by decade
+    station["hour"] = station["ts"].dt.hour
+    station["hoy"] = station["hour"] + (station["ts"].dt.dayofyear - 1) * 24
+    d1, d2 = [df for decade, df in station.groupby("decade")]
+    pval = ks_2samp(d1["hour"], d2["hour"])[1]
+    # quick check just return station if no adjustment needed
+    if pval >= 0.05:
+        station = station.drop(columns=["hour", "hoy"])
+        return station, station[station["decade"] == "cats"]  # empty dataframe
+
+    # Now, iteratively remove observations systematically based on hour of year
+    # the code below compares the frequencies of all hour-of-year, and
+    # removes 1 observation based on each round of disparities.
+    # e.g., looking at the 5th hour of the year (YYYY-01-01 05:00:00),
+    # if decade 1 had 3 observations and decade two had 10, randomly choose
+    # one of those 10 observations from decade 2 to remove.
+    # Do this for all hours and re-test until passing.
+
+    # init empty data frame for timestamps to be removed
+    rm_df = station[station["decade"] == "cats"]
+    rm_df["iter"] = None  # column to store iteration number
+    station = station.set_index("ts")  # set ts indes for discarding obs
+    # create a data frame for filling in missing hours-of-year with zeros
+    # there are 366 * 24 = 8784 hour periods in a leap year
+    n = 8784
+    hoy = np.arange(n)
+    d1_name, d2_name = station["decade"].unique()
+    hoy_df = pd.DataFrame(
+        {
+            "decade": np.concatenate([np.repeat(d1_name, n), np.repeat(d2_name, n)]),
+            "hoy": np.tile(hoy, 2),
+        }
+    )
+    k = 1  # iter counter
+    while pval < 0.05:
+
+        counts = (
+            station.groupby(["decade", "hoy"])["sid"]
+            .count()
+            .reset_index()
+            .rename(columns={"sid": "count"})
+        )
+        counts = counts.merge(hoy_df, on=["decade", "hoy"], how="outer").sort_values(
+            ["decade", "hoy"]
+        )
+        counts.loc[np.isnan(counts["count"]), "count"] = 0
+        d1_counts, d2_counts = [
+            df["count"].values for decade, df in counts.groupby("decade")
+        ]
+        d1_prune_hoy = np.argwhere(d1_counts - d2_counts > 0).flatten()
+        d2_prune_hoy = np.argwhere(d2_counts - d1_counts > 0).flatten()
+        d1_station, d2_station = [df for decade, df in station.groupby("decade")]
+        rm_ts = []
+        for i in d1_prune_hoy:
+            # random timestamp to drop
+            rm_ts.append(choice(d1_station[d1_station["hoy"] == i].index))
+        for i in d2_prune_hoy:
+            # random timestamp to drop
+            rm_ts.append(choice(d2_station[d2_station["hoy"] == i].index))
+
+        station = pd.concat([d1_station, d2_station])
+        temp_rm_df = station.loc[rm_ts].copy()
+        temp_rm_df["iter"] = k
+        k += 1
+        rm_df = pd.concat([rm_df, temp_rm_df])
+        station = station.drop(rm_ts)
+        # re-test
+        d1, d2 = [df for decade, df in station.groupby("decade")]
+        pval = ks_2samp(d1["hour"], d2["hour"])[1]
+
+    return station.reset_index(), rm_df
+
+
+def process_roses(stations, ncpus, roses_fp, discard_obs_fp):
     """
     For each station we need one trace for each direction.
 
@@ -163,7 +257,9 @@ def process_roses(stations, ncpus, roses_fp):
     # set month column to 0 for annual rose data
     summary_stations["month"] = 0
     # drop calms for chunking to rose
-    summary_stations = summary_stations[summary_stations["wd"] != 0].reset_index(drop=True)
+    summary_stations = summary_stations[summary_stations["wd"] != 0].reset_index(
+        drop=True
+    )
 
     # create summary rose data
     # break out into df by station for multithreading
@@ -190,52 +286,53 @@ def process_roses(stations, ncpus, roses_fp):
     keep_sids = min_ts[min_ts < pd.to_datetime("1991-01-01")].index.values
     stations = stations[stations["sid"].isin(keep_sids)]
 
-    # df = df[df["ws"] != 0] # ignoring this shouldn't matter, all zero wind
-    # speeds should have zero for direction
-    # proc_cols = ["sid", "direction_class", "speed_range", "count"]
-    # rose_data = pd.DataFrame(columns=proc_cols)
-
     # break out into df by station for multithreading
     # add 0 for month column first
     stations["month"] = 0
     station_dfs = [df for sid, df in stations.groupby("sid")]
 
-    # first, subset this list to stations where there is at least sufficient data for
-    # the 90's (this is assuming that if it's there for the 90's,
-    # it's there for the 2010's!)
+    # check sufficient data for each station, and return the station date for
+    # only 2010s and the oldest decade available between 80s and 90s
     with Pool(ncpus) as pool:
-        keep_list = pool.map(check_sufficient_data, station_dfs)
+        compare_station_dfs = pool.map(
+            check_sufficient_comparison_rose_data, station_dfs
+        )
 
-    # Remove the stations lacking sufficient 90s data
-    station_dfs = [df for df, keep in zip(station_dfs, keep_list) if keep]
+    compare_station_dfs = [df for df in compare_station_dfs if df is not None]
 
-    # break worthy stations up by decade
-    # pass "False" for prelim arg to avoid filtering on 1990's
-    # check again for sufficient data, for each decade
-    station_dfs = [
-        (decade_df, False)
-        for station_df in station_dfs
-        for decade, decade_df in station_df.groupby("decade")
+    # now can discard observations to achieve sampling parity between decades
+    with Pool(ncpus) as pool:
+        adjustment_results = pool.map(adjust_sampling, compare_station_dfs)
+    # break up tuples of data/discarded data
+    compare_station_dfs = [tup[0] for tup in adjustment_results]
+    discarded_obs = pd.concat([tup[1] for tup in adjustment_results])
+
+    print(f"Station data adjusted, chunking comparison roses, {round(time.perf_counter() - tic, 2)}s.")
+    tic = time.perf_counter()
+
+    # finally can chunk to rose for comparison roses - first filter out calms
+    compare_station_dfs = [
+        df[df["wd"] != 0].reset_index(drop=True) for df in compare_station_dfs
     ]
-    with Pool(ncpus) as pool:
-        keep_list = pool.starmap(check_sufficient_data, station_dfs)
+    # then break up by decade for chunking to rose
+    compare_station_dfs = [
+        df
+        for station in compare_station_dfs
+        for decade, df in station.groupby("decade")
+    ]
 
-    # again, remove station / decade combos lacking sufficient data
-    station_dfs = [df[0] for df, keep in zip(station_dfs, keep_list) if keep]
-
-    # remaining station / decades have sufficient data for chunking to rose
-    # filter out calms
-    station_dfs = [df[df["wd"] != 0].reset_index(drop=True) for df in station_dfs]
     with Pool(ncpus) as pool:
-        compare_roses = pd.concat(pool.map(chunk_to_rose, station_dfs))
+        compare_roses = pd.concat(pool.map(chunk_to_rose, compare_station_dfs))
 
     roses = pd.concat([summary_roses, monthly_roses, compare_roses])
 
     # concat and pickle it
     roses.to_pickle(roses_fp)
+    discarded_obs.to_csv(discard_obs_fp)
 
     print(f"Comparison roses done, {round(time.perf_counter() - tic, 2)}s.")
     print(f"Preprocessed data for wind roses written to {roses_fp}")
+    print(f"Discarded observations for comparison wind roses written to {discard_obs_fp}")
 
     return roses
 
@@ -280,10 +377,14 @@ def process_calms(stations, roses, calms_fp):
     d = d.groupby(["sid", "month"]).size().reset_index()
     monthly_calms = monthly_calms.merge(d, on=["sid", "month"])
     monthly_calms.columns = ["sid", "month", "total", "calm"]
-    monthly_calms = monthly_calms.assign(percent=round(monthly_calms["calm"] / monthly_calms["total"], 3) * 100)
+    monthly_calms = monthly_calms.assign(
+        percent=round(monthly_calms["calm"] / monthly_calms["total"], 3) * 100
+    )
     monthly_calms["decade"] = "none"
     # re-order for concat below
-    monthly_calms = monthly_calms[["sid", "month", "decade", "total", "calm", "percent"]]
+    monthly_calms = monthly_calms[
+        ["sid", "month", "decade", "total", "calm", "percent"]
+    ]
 
     # repeat for comparison rose calms (include decade grouping)
     # filter stations to those with comparison rose data
@@ -299,7 +400,9 @@ def process_calms(stations, roses, calms_fp):
         percent=round(compare_calms["calm"] / compare_calms["total"], 3) * 100
     )
     compare_calms["month"] = 0
-    compare_calms = compare_calms[["sid", "month", "decade", "total", "calm", "percent"]]
+    compare_calms = compare_calms[
+        ["sid", "month", "decade", "total", "calm", "percent"]
+    ]
 
     # concat the two calms data sources together
     calms = pd.concat([calms, monthly_calms, compare_calms])
@@ -402,6 +505,10 @@ def process_wep(stations, mean_wep_fp):
     mean_wep = wep.groupby(["sid", "year", "month"]).mean().reset_index()
     mean_wep["wep"] = np.round(mean_wep["wep"])
     mean_wep = mean_wep.astype({"year": "int16", "month": "int16"})
+    outlier_thresholds = mean_wep.groupby(["sid", "month"])["wep"].std().reset_index().rename(columns={"wep": "std"})
+    outlier_thresholds["std"] = outlier_thresholds["std"] * 5
+    mean_wep = mean_wep.merge(outlier_thresholds, on=["sid", "month"])
+    mean_wep = mean_wep[mean_wep["wep"] < mean_wep["std"]].drop(columns="std")
 
     mean_wep.to_pickle(mean_wep_fp)
 
@@ -467,7 +574,8 @@ if __name__ == "__main__":
 
     roses_fp = "data/roses.pickle"
     if do_roses:
-        roses = process_roses(stations, ncpus, roses_fp)
+        discard_obs_fp = base_dir.joinpath("discarded_comparison_obs.csv")
+        roses = process_roses(stations, ncpus, roses_fp, discard_obs_fp)
 
     if do_calms:
         calms_fp = "data/calms.pickle"
