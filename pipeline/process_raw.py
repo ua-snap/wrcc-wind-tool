@@ -1,10 +1,15 @@
 """Process raw IEM data, output single optimized pickle file"""
 
 # USE THIS SCRIPT TO DO QC DATA PROCESSING
+# hacky, done to alllow import from luts.py in app dir
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import argparse, glob, os, time
+import argparse, glob, time
 import numpy as np
 import pandas as pd
+import ruptures as rpt
+from bias_correction import BiasCorrection
 from luts import decades
 from multiprocessing import Pool
 from pathlib import Path
@@ -95,6 +100,69 @@ def filter_to_hour(station):
     return station.drop(columns=["valid", "delta_dt", "min_delta_dt", "keep"])
 
 
+def adjust_station(station):
+    """Detects changepoints in wind speed time series and
+    performs quantile mapping"""
+
+    def get_changepoints(arr):
+        """Helper function to find and return the changepoints in a wind speed
+        time series array"""
+        algo = rpt.Pelt(jump=1).fit(arr)
+        # 260 determined to be the smallest penalty where
+        # the most changepoints detected across all stations
+        # was 2.
+        return algo.predict(pen=260)
+
+    # aggregate by month for changepoint detection
+    station["ym"] = station["ts"].dt.year.astype("str") + "_" + station["ts"].dt.month.astype("str")
+    monthly_means = station.groupby("ym", sort=False, as_index=False)["sped"].mean()
+
+    # detect changepoints
+    cpts = get_changepoints(monthly_means["sped"].values)
+    
+    # if no changepoints found, set adjusted ws to 
+    if len(cpts) == 1:
+        station["sped_adj"] = station["sped"]
+        changepoints = pd.DataFrame({"sid": [], "cpt_date": []}) # no change points, empty df
+        station = station.drop(columns="ym")
+
+        return station, changepoints
+    # otherwise, slice up wind speed time series based on 
+    # year-months of changepoints
+    
+    # determine slices
+    cpts_ym = [monthly_means.iloc[cp]["ym"] for cp in cpts[:-1]]
+    cpt_dates = [pd.to_datetime(f"{ym[:4]}-{ym[5:]}-01") for ym in cpts_ym]
+    slices = [slice("1980-01-01", cpt_dates[0])]
+    if len(cpts) == 3:
+        # if difference between 1st and second breakpoint is 
+        # not greater than 5 years, use first breakpoint
+        if (cpt_dates[1] - cpt_dates[0]).days / 365 > 5:
+            slices.append(slice(cpt_dates[0], cpt_dates[1]))
+            slices.append(slice(cpt_dates[-1], "2019-12-31"))
+        else:
+            cpt_dates = cpt_dates[:1]
+            slices.append(slice(cpt_dates[0], "2019-12-31"))
+    
+    station = station.set_index("ts")
+    # "observed", or unbiased, slice taken to be the most recent
+    obs = station[slices[-1]]["sped"].values
+    # "simulated" or biased data are the more historical slices
+    sim = [station[sl]["sped"].values for sl in slices[:-1]]
+    
+    station["sped_adj"] = station["sped"]
+    for sl in slices[:-1]:
+        sim = station[sl]["sped"].values
+        bc = BiasCorrection(obs, sim, sim)
+        station.loc[sl, "sped_adj"] = bc.correct()
+        
+    # construct changepoints dataframe for logging
+    changepoints = pd.DataFrame({"sid": station["station"].iloc[0], "cpt_date": cpt_dates})
+    station = station.drop(columns="ym").reset_index()
+
+    return station, changepoints
+
+
 def read_and_process_csv(fp):
     """pandas.read_csv() wrapper for reading via Pool(), 
     and filter to hourly obs, removing erroneous data
@@ -114,11 +182,6 @@ def read_and_process_csv(fp):
     # Filter out ridiculously fast spikes
     # 100mph may be too low, use 110
     stations = station = station[station["sped"] < 110]
-    # Filter to hourly obs closest to "on the hour"
-    station = filter_to_hour(station)
-    # filter out spikes and dips using scipy.signal.find_peaks,
-    # keep those obs just in case
-    station, spikes, dips = filter_spurious(station)
 
     # handle observations with erroneous combination of direction/speed
     # The case where speed is 0 and direction is not is and invalid measurement.
@@ -146,12 +209,22 @@ def read_and_process_csv(fp):
     # set negative wind gusts to NaN
     station.loc[station["gust_mph"] < 0, "gust_mph"] = np.nan
 
+    # Filter observations!
+    # Filter to hourly obs closest to "on the hour"
+    station = filter_to_hour(station)
+    # filter out spikes and dips using scipy.signal.find_peaks,
+    # keep those obs just in case
+    station, spikes, dips = filter_spurious(station)
+
+    # detect changes in wind regime and adjust via quantile mapping
+    station, changepoints = adjust_station(station)
+
     # add decade column for aggregating
     for dyear in decades:
         dyears = list(range(dyear, dyear + 10))
         station.loc[station["ts"].dt.year.isin(dyears), "decade"] = decades[dyear]
 
-    return (station, spikes, dips)
+    return (station, spikes, dips, changepoints)
 
 
 def run_read_and_process(fps, ncpus):
@@ -166,22 +239,24 @@ def run_read_and_process(fps, ncpus):
     Notes:
         The timestamp in the returned data is the NEAREST HOUR of the obs
     """
-    print(f"Reading data using {ncpus} cores", end="...")
+    print(f"Reading / processing data using {ncpus} cores", end="...")
     tic = time.perf_counter()
 
-    with Pool(8) as pool:
+    with Pool(ncpus) as pool:
         out = pool.map(read_and_process_csv, fps)
 
     stations = pd.concat([out_tuple[0] for out_tuple in out], ignore_index=True)
     spikes = pd.concat([out_tuple[1] for out_tuple in out], ignore_index=True)
     dips = pd.concat([out_tuple[2] for out_tuple in out], ignore_index=True)
+    changepoints = pd.concat([out_tuple[3] for out_tuple in out], ignore_index=True)
 
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
 
     return (
-        stations.rename(columns={"station": "sid", "sped": "ws", "drct": "wd"}),
+        stations.rename(columns={"station": "sid", "sped": "ws", "sped_adj": "ws_adj", "drct": "wd"}),
         spikes,
         dips,
+        changepoints,
     )
 
 
@@ -214,18 +289,22 @@ def main():
     out_fp = base_dir.joinpath("stations.pickle")
     spikes_fp = base_dir.joinpath("raw_spikes.pickle")
     dips_fp = base_dir.joinpath("raw_dips.pickle")
+    cpts_fp = base_dir.joinpath("raw_changepoints.pickle")
 
     # read data
-    stations, spikes, dips = run_read_and_process(raw_fps, ncpus)
+    stations, spikes, dips, changepoints = run_read_and_process(raw_fps, ncpus)
 
     print(f"Writing processed data to {out_fp}")
-    print(f"Writing filtered spikes data to {spikes_fp}", end="...")
-    print(f"Writing filtered dips data to {dips_fp}", end="...")
+    print(f"Writing filtered spikes data to {spikes_fp}")
+    print(f"Writing filtered dips data to {dips_fp}")
+    print(f"Writing changepoints data to {cpts_fp}")
+
     tic = time.perf_counter()
     stations.to_pickle(out_fp)
     spikes.to_pickle(spikes_fp)
     dips.to_pickle(dips_fp)
-    print(f"done, {round(time.perf_counter() - tic, 2)}s")
+    changepoints.to_pickle(cpts_fp)
+    print(f"Done, {round(time.perf_counter() - tic, 2)}s")
 
     return None
 
