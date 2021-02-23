@@ -319,16 +319,16 @@ help_text = wrap_in_section(
         """
 <h3 class="title is-4">About Airport Wind Data</h3>
 
-<p>Wind speed observations source: <a href="https://mesonet.agron.iastate.edu/request/download.phtml?network=AK_ASOS">Iowa Environmental Mesonet</a>, run by Iowa State University. Houses data collected by the <a href="https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-surface-observing-system-asos">Automated Surface Observing System</a> network and the <a href="https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-weather-observing-system-awos">Automated Weather Observing System</a>.</p>
-<p>Measurement frequency: Varies between locations, from every 5 minutes to every 3 hours. Winds were measured hourly in most cases; speeds from routine measurements were preferred (nearest to clock hour) in cases where measurements were more frequent.</p>
-<p>Observing site criteria: We use data from 185 airport weather stations located across Alaska. For inclusion here, a station must have begun measurements before June 6, 2010.</p>
+<p>Wind speed/direction observations source: <a href="https://mesonet.agron.iastate.edu/request/download.phtml?network=AK_ASOS">Iowa Environmental Mesonet</a>, run by Iowa State University. Houses data collected by the <a href="https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-surface-observing-system-asos">Automated Surface Observing System</a> network and the <a href="https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/automated-weather-observing-system-awos">Automated Weather Observing System</a>.</p>
+<p>Measurement frequency: Winds were measured hourly in most cases; routine measurements were preferred (nearest to clock hour) in cases where measurements were more frequent.</p>
+<p>Observing site criteria: We used data from 166 airport weather stations located across Alaska, selected from a pool of 185 candidate stations in the database. For inclusion here, a station must have a reasonably complete record, and must have begun measurements before June 6, 2010.</p>
 
 <h4 class="title is-4">Data processing and quality control</h4>
 
 <p>Data were adjusted for homogeneity because some instrument heights (now 10 m) and/or precise locations have changed since 1980.</p>
-<p>Wind speeds at 28 stations showed a statistically significant change from one part of the record to the next. Therefore we adjusted the data prior to the change using quantile mapping, a typical method for correcting biased meteorological data.</p>
-<p>Four stations displayed two discontinuities. For these, we applied the quantile mapping adjustments to the later period.</p>
-<p>We also removed obviously wrong reports (e.g., wind speeds exceeding 100 mph) and short-duration (< 6 hour) spikes in which an hourly wind speed was at least 30 mph greater than in the immediately preceding and subsequent hours.</p>
+<p>Wind speeds at 47 stations showed a change from one part of the record to the next. Therefore we adjusted the data prior to the change using quantile mapping, a typical method for correcting biased meteorological data.</p>
+<p>Five stations displayed two discontinuities. For these, we applied the quantile mapping adjustments to the later period.</p>
+<p>We also removed obviously wrong reports (e.g., sustained wind speeds exceeding 110 mph) and short-duration spikes and dips identified using a signal-processing technique for <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html">identifying outliers</a>.</p>
 """
     ),
     section_classes="words-block-grey",

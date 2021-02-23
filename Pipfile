@@ -16,6 +16,8 @@ ipykernel = "*"
 requests = "*"
 scipy = "*"
 matplotlib = "*"
+ruptures = "*"
+bias-correction = "*"
 
 [dev-packages]
 flask = "*"
