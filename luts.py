@@ -11,26 +11,22 @@ import plotly.io as pio
 # need to get map data ready here first for use in gui
 # need to filter to airports meeting minimum data requirements
 airport_meta = pd.read_csv("data/airport_meta.csv").set_index("sid")
-# load manually-scraped info to update these metadata with
+# load manually-scraped info to update these metadata with airport and runway names
 airport_meta = (
     pd.read_csv("data/meta_amend.csv")
     .set_index("sid")
     .combine_first(airport_meta)
     .reset_index()
 )
-
 # remove duplicate rows after discarding runway info to have unique locations
 map_data = (
     airport_meta.drop(columns=["rw_name", "rw_heading"])
     .drop_duplicates()
     .set_index("sid")
 )
-# fill in missing airport names (temporary)
-# map_data["real_name"] = map_data.apply(lambda row: row["station_name"] if pd.isnull(row["real_name"]) else row["real_name"], axis=1)
 # use only the unique sid values in roses df
 roses = pd.read_pickle("data/roses.pickle")
 map_data = map_data.loc[map_data.index.isin(roses["sid"].unique())]
-
 
 # Plotly format template
 plotly_template = pio.templates["simple_white"]
@@ -188,3 +184,5 @@ exceedance_units = {
     "kts": {"12.08": "10.5 kts", "14.96": "13 kts", "18.41": "16 kts"},
     "m/s": {"12.08": "5.4 m/s", "14.96": "6.7 m/s", "18.41": "8.2 m/s"},
 }
+
+background_color = "#EFEFEF"
