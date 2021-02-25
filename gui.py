@@ -106,12 +106,26 @@ about = wrap_in_section(
 )
 
 
+def remove_asos_awos(location):
+    """remove the ASOS and AWOS strings from station_name field,
+    for airports dropdown"""
+    location = location.replace("(ASOS)", "")
+    location = location.replace("(AWOS)", "")
+    return location
+
+def format_location_name(station_name, sid):
+    """Uses new location names"""
+    try:
+        return luts.new_location_names[sid]
+    except KeyError:
+        return station_name
+
 airports_dropdown_field = wrap_in_field(
     "Select an airport",
     dcc.Dropdown(
         id="airports-dropdown",
         options=[
-            {"label": airport.real_name, "value": index}
+            {"label": f"{format_location_name(remove_asos_awos(airport.station_name).title(), index)} / {airport.real_name} ({index})", "value": index}
             for index, airport in luts.map_data.iterrows()
         ],
         value="PAFA",
@@ -329,6 +343,12 @@ help_text = wrap_in_section(
 <p>Wind speeds at 47 stations showed a change from one part of the record to the next. Therefore we adjusted the data prior to the change using quantile mapping, a typical method for correcting biased meteorological data.</p>
 <p>Five stations displayed two discontinuities. For these, we applied the quantile mapping adjustments to the later period.</p>
 <p>We also removed obviously wrong reports (e.g., sustained wind speeds exceeding 110 mph) and short-duration spikes and dips identified using a signal-processing technique for <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html">identifying outliers</a>.</p>
+
+<h4 class="title is-4">Similar tools</h4>
+
+<ul>
+    <li>The <a href="http://windtool.accap.uaf.edu/">ACCAP Community Winds tool</a> takes a climatological approach with much of the same data, and includes model-based projections of future winds</li
+</ul>
 """
     ),
     section_classes="words-block-grey",
