@@ -266,6 +266,7 @@ def update_exceedance_plot(sid, units):
         x="direction",
         y="exceedance",
         color="threshold",
+        custom_data=["rdc_class"],
         color_discrete_sequence=["#DC267F", "#FFB000", "#648FFF"],
         title=title,
         labels={
@@ -287,6 +288,7 @@ def update_exceedance_plot(sid, units):
             },
             "xaxis": {"showline": True, "linecolor": "black", "fixedrange": True,},
             "font": {"size": 14},
+            "hovermode": "closest",
         }
     )
 
@@ -296,6 +298,8 @@ def update_exceedance_plot(sid, units):
 
     for i in [0, 1, 2]:
         fig["data"][i]["name"] = luts.exceedance_units[units][fig["data"][i]["name"]]
+    
+    fig.update_traces(hovertemplate="RDC Class: %{customdata}<br>Runway direction: %{x}°<br>Exceedance frequency: %{y}%")    
 
     return fig
 

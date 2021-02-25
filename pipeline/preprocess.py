@@ -9,7 +9,7 @@ import argparse, math, time
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from luts import speed_ranges, decades
+from luts import speed_ranges, exceedance_classes
 from multiprocessing import Pool
 from pathlib import Path
 from random import choice
@@ -450,6 +450,7 @@ def compute_exceedance(station, thresholds):
             "sid": station["sid"].values[0],
             "direction": np.repeat(directions, thresholds.shape[0]),
             "threshold": np.tile(thresholds, directions.shape[0]),
+            "rdc_class": np.tile(exceedance_classes, directions.shape[0]),
             "exceedance": exceedance,
         }
     )
@@ -479,9 +480,7 @@ def process_crosswinds(stations, ncpus, exceedance_fp):
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
     print(f"Allowable exceedance frequencies saved to {exceedance_fp}")
 
-    crosswinds = exceedance
-
-    return crosswinds
+    return exceedance
 
 
 def process_wep(stations, mean_wep_fp):

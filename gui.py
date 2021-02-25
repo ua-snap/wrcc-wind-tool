@@ -178,8 +178,8 @@ wind_rose_intro = wrap_in_section(
 <p>This wind rose shows prevailing wind direction and speed for all routine hourly data recorded at the selected station.</p>
  <ul>
    <li><strong>Spokes</strong> in the rose point in the compass direction from which the wind was blowing (i.e., a spoke pointing to the right denotes a wind from the east).</li>
-   <li><strong>Colors</strong> within each spoke denote frequencies of wind speed occurrence.  Hover cursor over spoke to show the frequencies.</li>
-   <li><strong>Size</strong> of the center hole indicates the &percnt; of calm winds.</li>
+   <li><strong>Colors</strong> within each spoke denote wind speed, and segment length denotes occurrence frequency.  Hover cursor over spoke to show the frequencies.</li>
+   <li><strong>Size</strong> of the center hole indicates the frequency of calm winds.</li>
  </ul>
 """
     ),
@@ -234,7 +234,7 @@ crosswind_intro = wrap_in_section(
     ddsih.DangerouslySetInnerHTML(
         """
 <h3 class="title is-4">Crosswind Component Calculation</h3>
-<p>Use this chart to explore how the allowable crosswind component exceedance changes with runway direction. The exceedance is the frequency with which hourly winds exceeded the allowable crosswind component threshold displayed.  The three thresholds represent different classes of aircraft. Existing runways are shown. Hover cursor over runway corners to see more detail.</p>
+<p>Use this chart to explore how the allowable crosswind component exceedance changes with runway direction. The exceedance is the frequency with which hourly winds exceeded the allowable crosswind component threshold. Thresholds are derived from the FAA Runway Design Codes (RDC) described in the <a href="https://www.faa.gov/airports/resources/advisory_circulars/index.cfm/go/document.current/documentNumber/150_5300-13">Advisory Circular 150/5300-13A</a> and correspond different size classes of aircraft. Hover cursor over lines to show aircraft classes. Existing runways are shown, hover cursor over runway corners to see more detail.</p>
   """
     ),
     section_classes="words-block-grey interstitial",
