@@ -108,12 +108,6 @@ decades = {
     2010: "2010-2019",
 }
 
-crosswind_thresholds = {
-    "A-I and B-I": 10.5,
-    "A-II and B-II": 13,
-    "A-III, B-III, C-I through D-III, D-I through D-III": 16,
-}
-
 # Common configuration for graph figures
 fig_download_configs = dict(filename="winds", width="1280", scale=2)
 fig_configs = dict(
@@ -184,5 +178,11 @@ exceedance_units = {
     "kts": {"12.08": "10.5 kts", "14.96": "13 kts", "18.41": "16 kts"},
     "m/s": {"12.08": "5.4 m/s", "14.96": "6.7 m/s", "18.41": "8.2 m/s"},
 }
+
+exceedance_classes = [
+    "A-I and B-I",
+    "A-II and B-II",
+    "A-III, B-III, C-I through D-III, D-I through D-III",
+]
 
 background_color = "#EFEFEF"
