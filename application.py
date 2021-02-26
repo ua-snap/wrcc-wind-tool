@@ -593,14 +593,14 @@ def update_box_plots(sid):
     """ Generate box plot for monthly averages """
 
     d = mean_wep.loc[(mean_wep["sid"] == sid)]
-    c_name = luts.map_data.loc[sid]["real_name"]
+    station_name = luts.map_data.loc[sid]["real_name"]
 
     return go.Figure(
         layout=dict(
             template=luts.plotly_template,
             font=dict(family="Open Sans", size=14),
             title=dict(
-                text="Average monthly wind energy potential for " + c_name,
+                text=f"Average monthly wind energy potential for {station_name}, 100m height",
                 font=dict(size=18, family="Open Sans"),
                 x=0.5,
             ),
