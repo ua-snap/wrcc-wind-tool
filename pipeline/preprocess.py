@@ -498,8 +498,22 @@ def process_wep(stations, mean_wep_fp):
     stations["month"] = stations["ts"].dt.month
     stations["year"] = stations["ts"].dt.year
 
+    # first convert ws to m/s
+    stations["ws"] = stations["ws"].astype(np.float32) / 2.237
+    # adjust for height using the log-law: https://websites.pmc.ucsc.edu/~jnoble/wind/extrap/
+    # v ~ v_ref * log(z / z_0) / log(z_ref / z_0) where 
+    # z_0 = 0.5 (roughness length of 0.0005 for "airport" landscape type), 
+    # z_ref = 10, known speed height (10m)
+    # z = 100, approx height of typical wind turbine
+    # v_ref is the known speed at z_ref height
+    z = 100
+    z_ref = 10
+    z_0 = 0.5
+    stations["ws"] = stations["ws"] * (np.log(z / z_0) / np.log(z_ref / z_0))
+    # compute wind energy potential using this:https://byjus.com/wind-energy-formula/
+    # rho is air density constant
     rho = 1.23
-    stations["wep"] = 0.5 * rho * (stations["ws"].astype(np.float32) / 2.237) ** 3
+    stations["wep"] = 0.5 * rho * stations["ws"] ** 3
     wep = stations.drop(columns=["ws", "wd"])
     mean_wep = wep.groupby(["sid", "year", "month"]).mean().reset_index()
     mean_wep["wep"] = np.round(mean_wep["wep"])
