@@ -584,6 +584,8 @@ if __name__ == "__main__":
     # gather station data into single file
     print("Reading data")
     stations = pd.read_pickle(base_dir.joinpath("stations.pickle"))
+    # use the ws_adj column instead of ws
+    stations = stations.drop(columns="ws").rename(columns={"ws_adj": "ws"})
 
     roses_fp = "data/roses.pickle"
     if do_roses:
