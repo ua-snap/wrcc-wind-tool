@@ -18,6 +18,7 @@ scipy = "*"
 matplotlib = "*"
 ruptures = "*"
 bias-correction = "*"
+jupyter = "*"
 
 [dev-packages]
 flask = "*"

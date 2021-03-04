@@ -34,6 +34,8 @@ if __name__ == "__main__":
         fp,
         "--output-dir",
         out_dir,
+        "--template",
+        "classic",
         "--to",
         "html",
         "--no-prompt",
