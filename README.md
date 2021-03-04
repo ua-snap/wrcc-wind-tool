@@ -54,4 +54,3 @@ eb deploy
 The following env vars need to be set:
 
  * `REQUESTS_PATHNAME_PREFIX` - URL fragment so requests are routed properly. This looks like: /tools/<name-of-tool>. Default is /
- * `GTAG_ID` - Google Tag Manager ID

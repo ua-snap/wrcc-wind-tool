@@ -34,19 +34,18 @@ app = dash.Dash(__name__, requests_pathname_prefix=path_prefix)
 # AWS Elastic Beanstalk looks for application by default,
 # if this variable (application) isn't set you will get a WSGI error.
 application = app.server
-gtag_id = os.environ["GTAG_ID"]
 app.index_string = f"""
 <!DOCTYPE html>
 <html>
     <head>
         <!-- Global site tag (gtag.js) - Google Analytics -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-3978613-12"></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-1J75Z1N5FP"></script>
         <script>
           window.dataLayer = window.dataLayer || [];
           function gtag(){{dataLayer.push(arguments);}}
           gtag('js', new Date());
 
-          gtag('config', '{gtag_id}');
+          gtag('config', 'G-1J75Z1N5FP');
         </script>
         {{%metas%}}
         <title>{{%title%}}</title>
@@ -461,7 +460,7 @@ def get_rose_calm_month_annotations(titles, calm):
 )
 def update_rose_monthly(sid, units, coarse):
     """
-    Create a grid of subplots for all monthyl wind roses.
+    Create a grid of subplots for all monthly wind roses.
     """
     station_name = luts.map_data.loc[sid]["real_name"]
     station_rose = roses.loc[(roses["sid"] == sid) & (roses["coarse"] == coarse)]
