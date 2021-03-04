@@ -6,12 +6,13 @@ This repo contains everything needed to create the app, including fetching and p
 
 ## Structure
  
+ * `ancillary/` has jupyter notebooks for tracking quality control and decisions about which data to use. 
+ * `assets/` has images and CSS (uses [Bulma](https://bulma.io))
+ * `data/` has the preprocessed data for the app. These are tracked in git for inclusion when deploying to EB.
  * `pipeline/` contains the scripts to fetch and process the data for app ingest.
  * `application.py` contains the main app loop code.
  * `gui.py` has most user interface elements.
  * `luts.py` has shared code & lookup tables and other configuration.
- * `assets/` has images and CSS (uses [Bulma](https://bulma.io))
- * `data/` has the preprocessed data for the app. These are tracked in git for inclusion when deploying to EB.
 
 ## Pipeline
 
