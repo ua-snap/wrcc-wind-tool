@@ -130,7 +130,7 @@ map_airports_trace = go.Scattermapbox(
 map_layout = go.Layout(
     autosize=True,
     hovermode="closest",
-    mapbox=dict(style="carto-positron", zoom=2.5, center=dict(lat=63, lon=-158)),
+    mapbox=dict(style="carto-positron", zoom=3.25, center=dict(lat=63, lon=-158)),
     showlegend=False,
     margin=dict(l=0, r=0, t=0, b=0),
 )
