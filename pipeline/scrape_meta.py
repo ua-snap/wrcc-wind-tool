@@ -52,27 +52,28 @@ def parse_runway_info(rw_info):
 
 def scrape_airnav(uri):
     """Scrape relevant data from AirNav.com for a particular ICAO identifier"""
-
     print(f"Requesting {uri}")
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
-    r = requests.get(uri, headers=headers)
+    # sleep for one second to try limit overload
+    time.sleep(1)
+
+    r = requests.get(uri)
     print(f"Initial status code {r.status_code}")
     # handle retries, return fail after 10
     # setup fail df to return
     stid = uri[-4:]
-    colnames = ["rw_name", "rw_heading", "faa_id", "name", "stid"]
+    colnames = ["rw_name", "rw_heading", "faa_id", "stid"]
     fail_df = pd.DataFrame(
-        {k: [v] for k, v in zip(colnames, (None, None, None, None, stid))}
+        {k: [v] for k, v in zip(colnames, (None, None, None, stid))}
     )
     if r.status_code != 200:
-        wait = [0.1 * 2 ** x for x in list(range(10))]
+        wait = [30, 60, 120]
         for t in wait:
             time.sleep(t)
             print(f"Retrying {uri}")
             r = requests.get(uri)
             if r.status_code == 200:
                 break
-            elif (r.status_code != 200) & (t == wait[-1]):
+            if (r.status_code != 200) & (t == wait[-1]):
                 print(f"Max attempts exceded for {uri}")
                 return fail_df
 
