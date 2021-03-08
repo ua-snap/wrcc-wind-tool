@@ -116,6 +116,7 @@ def remove_asos_awos(location):
     location = location.replace("(AWOS)", "")
     return location
 
+
 def format_location_name(station_name, sid):
     """Uses new location names"""
     try:
@@ -123,18 +124,21 @@ def format_location_name(station_name, sid):
     except KeyError:
         return station_name
 
+
 airports_dropdown_field = wrap_in_field(
     "Select an airport",
     dcc.Dropdown(
         id="airports-dropdown",
         options=[
-            {"label": f"{format_location_name(remove_asos_awos(airport.station_name).title(), index)} / {airport.real_name} ({index})", "value": index}
+            {
+                "label": f"{format_location_name(remove_asos_awos(airport.station_name).title(), index)} / {airport.real_name} ({index})",
+                "value": index,
+            }
             for index, airport in luts.map_data.iterrows()
         ],
         value="PAFA",
     ),
 )
-
 
 map_selector_section = wrap_in_section(
     html.Div(
@@ -143,14 +147,13 @@ map_selector_section = wrap_in_section(
             dcc.Graph(
                 id="map",
                 figure=map_figure,
-                config={"displayModeBar": False, "scrollZoom": True},
+                config={"displayModeBar": False, "scrollZoom": False},
             ),
         ],
     ),
     section_classes="roomy",
     container_classes="content",
 )
-
 
 units_radios_field = html.Div(
     className="field radio-selector",

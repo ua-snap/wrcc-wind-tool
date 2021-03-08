@@ -98,6 +98,7 @@ input[type="radio"] {
 
 #map {
     width: 50rem;
+    height: 39rem;
 }
 
 #airports-dropdown.Select {

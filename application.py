@@ -110,18 +110,13 @@ def update_place_dropdown(selected_on_map):
 
 
 @app.callback(
-    Output("map", "figure"),
-    [
-        Input("airports-dropdown", "value"),
-        Input("map", "relayoutData"),
-        State("map", "figure"),
-    ],
+    Output("map", "figure"), Input("airports-dropdown", "value"),
 )
-def update_selected_airport_on_map(sid, relayout, map_state):
+def update_selected_airport_on_map(sid):
     """ Draw a second trace on the map with one community highlighted. """
     # print(sid)
 
-    default_map_data = {
+    return {
         "data": [
             luts.map_airports_trace,
             go.Scattermapbox(
@@ -136,30 +131,6 @@ def update_selected_airport_on_map(sid, relayout, map_state):
         ],
         "layout": luts.map_layout,
     }
-
-    # this section handles zoom restriction.
-    try:
-        # if station hasn't changed, check zoom level and adjust as necessary
-        if (
-            sid
-            == luts.map_data.loc[
-                luts.map_data["real_name"] == map_state["data"][1]["text"]
-            ].index[0]
-        ):
-            if relayout["mapbox.zoom"] < 2:
-                print(default_map_data)
-                return default_map_data
-            elif relayout["mapbox.zoom"] > 10:
-                map_state["layout"]["mapbox"]["zoom"] = 9
-                return map_state
-            return map_state
-        # new community, reset map
-        else:
-            return default_map_data
-
-    # exception occurs on app loading
-    except:
-        return default_map_data
 
 
 def get_rose_calm_sxs_annotations(titles, calm):
