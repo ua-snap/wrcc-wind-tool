@@ -1,11 +1,11 @@
-# pylint: disable=invalid-name, import-error
-"""Contains common lookup tables between GUI/application code"""
+# pylint: disable=C0103,C0301,E0401
+"""
+Contains common lookup tables between GUI/application code
+"""
 
-import os
 import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
-from pathlib import Path
 import plotly.io as pio
 
 # need to get map data ready here first for use in gui

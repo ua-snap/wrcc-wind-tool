@@ -1,18 +1,19 @@
+# pylint: disable=C0103,C0301,E0401
+"""
+GUI code
+"""
+
 import os
-import luts
+from datetime import datetime
 import plotly.graph_objs as go
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_dangerously_set_inner_html as ddsih
-from datetime import datetime
+import luts
 
 
 # For hosting
 path_prefix = os.getenv("REQUESTS_PATHNAME_PREFIX") or "/"
-
-# Change the feedback tool name to create a new Feedback URL for this app
-# before launching into production.
-feedback_toolname = "CHANGE ME"
 
 map_figure = go.Figure(data=luts.map_airports_trace, layout=luts.map_layout)
 
@@ -78,7 +79,7 @@ header = ddsih.DangerouslySetInnerHTML(
     <div class="navbar-end">
       <div class="navbar-item">
         <div class="buttons">
-          <a href="https://uaf-iarc.typeform.com/to/mN7J5cCK#tool=HistoricalWinds%20at%20Alaska%20Airports" class="button is-link" target="_blank">
+          <a href="https://uaf-iarc.typeform.com/to/mN7J5cCK#tool=Historical%20Winds%20at%20Alaska%20Airports" class="button is-link" target="_blank">
             Feedback
           </a>
         </div>
@@ -186,7 +187,6 @@ rose_res_radios_field = html.Div(
     ],
 )
 
-
 wind_rose_intro = wrap_in_section(
     ddsih.DangerouslySetInnerHTML(
         """
@@ -210,19 +210,12 @@ wind_rose_section = wrap_in_section(
             html.Div(
                 className="column is-four-fifths",
                 children=[
-                    dcc.Graph(
-                        id="rose",
-                        figure=go.Figure(),
-                        config=luts.fig_configs,
-                    ),
+                    dcc.Graph(id="rose", figure=go.Figure(), config=luts.fig_configs,),
                 ],
             ),
             html.Div(
                 className="column is-one-fifth",
-                children=[
-                    units_radios_field,
-                    rose_res_radios_field,
-                ],
+                children=[units_radios_field, rose_res_radios_field,],
             ),
         ],
     )
@@ -239,11 +232,7 @@ monthly_wind_rose_intro = wrap_in_section(
 )
 
 monthly_wind_rose_section = wrap_in_section(
-    dcc.Graph(
-        id="rose_monthly",
-        figure=go.Figure(),
-        config=luts.fig_configs,
-    )
+    dcc.Graph(id="rose_monthly", figure=go.Figure(), config=luts.fig_configs,)
 )
 
 crosswind_intro = wrap_in_section(
@@ -258,11 +247,7 @@ crosswind_intro = wrap_in_section(
 )
 
 crosswind_section = wrap_in_section(
-    dcc.Graph(
-        id="exceedance_plot",
-        figure=go.Figure(),
-        config=luts.fig_configs,
-    )
+    dcc.Graph(id="exceedance_plot", figure=go.Figure(), config=luts.fig_configs,)
 )
 
 wind_energy_intro = wrap_in_section(
@@ -285,11 +270,7 @@ wind_energy_intro = wrap_in_section(
 )
 
 wind_energy_section = wrap_in_section(
-    dcc.Graph(
-        id="wep_box",
-        figure=go.Figure(),
-        config=luts.fig_configs,
-    )
+    dcc.Graph(id="wep_box", figure=go.Figure(), config=luts.fig_configs,)
 )
 
 historical_roses_intro = wrap_in_section(
@@ -304,11 +285,7 @@ historical_roses_intro = wrap_in_section(
 )
 
 historical_roses_section = wrap_in_section(
-    dcc.Graph(
-        id="rose_sxs",
-        figure=go.Figure(),
-        config=luts.fig_configs,
-    )
+    dcc.Graph(id="rose_sxs", figure=go.Figure(), config=luts.fig_configs,)
 )
 
 historical_change_intro = wrap_in_section(
@@ -323,11 +300,7 @@ historical_change_intro = wrap_in_section(
 )
 
 historical_change_section = wrap_in_section(
-    dcc.Graph(
-        id="rose_diff",
-        figure=go.Figure(),
-        config=luts.fig_configs,
-    ),
+    dcc.Graph(id="rose_diff", figure=go.Figure(), config=luts.fig_configs,),
 )
 
 help_text = wrap_in_section(

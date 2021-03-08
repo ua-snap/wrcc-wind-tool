@@ -1,23 +1,24 @@
+# pylint: disable=C0103,C0301,E0401
 """Process raw IEM data, output single optimized pickle file"""
 
-# USE THIS SCRIPT TO DO QC DATA PROCESSING
-# hacky, done to alllow import from luts.py in app dir
-import os, sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import argparse, glob, time
+import argparse
+import os
+import sys
+import time
+from multiprocessing import Pool
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import ruptures as rpt
 from bias_correction import BiasCorrection
-from luts import decades
-from multiprocessing import Pool
-from pathlib import Path
 from scipy.signal import find_peaks
+# this hack is done to alllow import from luts.py in app dir
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from luts import decades
 
 
-def filter_spurious(station, xname="sped", tname="ts", delta=30):
-    """Identify and remove spurious observations, 
+def filter_spurious(station, tname="ts"):
+    """Identify and remove spurious observations,
     returns filtered data and flagged observations"""
     station = station.set_index(tname)
     # ignore missing speed data
@@ -114,28 +115,32 @@ def adjust_station(station):
         return algo.predict(pen=260)
 
     # aggregate by month for changepoint detection
-    station["ym"] = station["ts"].dt.year.astype("str") + "_" + station["ts"].dt.month.astype("str")
+    station["ym"] = (
+        station["ts"].dt.year.astype("str") + "_" + station["ts"].dt.month.astype("str")
+    )
     monthly_means = station.groupby("ym", sort=False, as_index=False)["sped"].mean()
 
     # detect changepoints
     cpts = get_changepoints(monthly_means["sped"].values)
-    
-    # if no changepoints found, set adjusted ws to 
+
+    # if no changepoints found, set adjusted ws to original ws
     if len(cpts) == 1:
         station["sped_adj"] = station["sped"]
-        changepoints = pd.DataFrame({"sid": [], "cpt_date": []}) # no change points, empty df
+        changepoints = pd.DataFrame(
+            {"sid": [], "cpt_date": []}
+        )  # no change points, empty df
         station = station.drop(columns="ym")
 
         return station, changepoints
-    # otherwise, slice up wind speed time series based on 
+    # otherwise, slice up wind speed time series based on
     # year-months of changepoints
-    
+
     # determine slices
     cpts_ym = [monthly_means.iloc[cp]["ym"] for cp in cpts[:-1]]
     cpt_dates = [pd.to_datetime(f"{ym[:4]}-{ym[5:]}-01") for ym in cpts_ym]
     slices = [slice("1980-01-01", cpt_dates[0])]
     if len(cpts) == 3:
-        # if difference between 1st and second breakpoint is 
+        # if difference between 1st and second breakpoint is
         # not greater than 5 years, use first breakpoint
         if (cpt_dates[1] - cpt_dates[0]).days / 365 > 5:
             slices.append(slice(cpt_dates[0], cpt_dates[1]))
@@ -143,32 +148,34 @@ def adjust_station(station):
         else:
             cpt_dates = cpt_dates[:1]
             slices.append(slice(cpt_dates[0], "2019-12-31"))
-    
+
     station = station.set_index("ts")
     # "observed", or unbiased, slice taken to be the most recent
     obs = station[slices[-1]]["sped"].values
     # "simulated" or biased data are the more historical slices
     sim = [station[sl]["sped"].values for sl in slices[:-1]]
-    
+
     station["sped_adj"] = station["sped"]
     for sl in slices[:-1]:
         sim = station[sl]["sped"].values
         bc = BiasCorrection(obs, sim, sim)
         station.loc[sl, "sped_adj"] = bc.correct()
-        
+
     # construct changepoints dataframe for logging
-    changepoints = pd.DataFrame({"sid": station["station"].iloc[0], "cpt_date": cpt_dates})
+    changepoints = pd.DataFrame(
+        {"sid": station["station"].iloc[0], "cpt_date": cpt_dates}
+    )
     station = station.drop(columns="ym").reset_index()
 
     return station, changepoints
 
 
 def read_and_process_csv(fp):
-    """pandas.read_csv() wrapper for reading via Pool(), 
+    """pandas.read_csv() wrapper for reading via Pool(),
     and filter to hourly obs, removing erroneous data
 
     Args:
-        fp (PosixPath): Path object to 
+        fp (PosixPath): Path object to
 
     Returns:
         pandas.DataFrame
@@ -181,7 +188,7 @@ def read_and_process_csv(fp):
 
     # Filter out ridiculously fast spikes
     # 100mph may be too low, use 110
-    stations = station = station[station["sped"] < 110]
+    station = station[station["sped"] < 110]
 
     # handle observations with erroneous combination of direction/speed
     # The case where speed is 0 and direction is not is and invalid measurement.
@@ -198,7 +205,6 @@ def read_and_process_csv(fp):
     # There are 100 times as many of these as the first case. Instead of throwing these away,
     # leave as is - it appears likely that these are observations
     # of light and variable wind, as seen in METARs e.g. for PAEI on 2011-10-17
-    # stations.loc[(stations.ws != 0) & (~np.isnan(stations.ws)) & (stations.wd == 0), "drct"] = np.nan
 
     # Different stations have different minimum values recorded!
     # For ASOS, winds measured at 2 knots or less should be reported calm
@@ -235,7 +241,7 @@ def run_read_and_process(fps, ncpus):
 
     Returns:
         pandas.DataFrame of all individual sites
-    
+
     Notes:
         The timestamp in the returned data is the NEAREST HOUR of the obs
     """
@@ -253,7 +259,9 @@ def run_read_and_process(fps, ncpus):
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
 
     return (
-        stations.rename(columns={"station": "sid", "sped": "ws", "sped_adj": "ws_adj", "drct": "wd"}),
+        stations.rename(
+            columns={"station": "sid", "sped": "ws", "sped_adj": "ws_adj", "drct": "wd"}
+        ),
         spikes,
         dips,
         changepoints,
@@ -261,8 +269,9 @@ def run_read_and_process(fps, ncpus):
 
 
 def main():
+    """Process raw IEM wind data downloaded by download_iem.py"""
     parser = argparse.ArgumentParser(
-        description="Extract the date ranges of historical 8-day MODIS data"
+        description="Process the raw wind data downloaded from IEM"
     )
     parser.add_argument(
         "-n",
@@ -304,9 +313,8 @@ def main():
     spikes.to_pickle(spikes_fp)
     dips.to_pickle(dips_fp)
     changepoints.to_pickle(cpts_fp)
-    print(f"Done, {round(time.perf_counter() - tic, 2)}s")
 
-    return None
+    print(f"Done, {round(time.perf_counter() - tic, 2)}s")
 
 
 if __name__ == "__main__":
