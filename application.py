@@ -1,19 +1,20 @@
-# pylint: disable=C0103,E0401
+# pylint: disable=C0103,E0401,C0301
 """
-Template for SNAP Dash apps.
+Application code
 """
 
-import copy, math, os
+import copy
+import math
+import os
 import dash
-import luts
 import numpy as np
 import pandas as pd
-import plotly.graph_objs as go
 import plotly.express as px
-from dash.dependencies import Input, Output, State
-from gui import layout, path_prefix
-from pathlib import Path
+import plotly.graph_objs as go
+from dash.dependencies import Input, Output
 from plotly.subplots import make_subplots
+import luts
+from gui import layout, path_prefix
 
 
 # Read data blobs and other items used from env
@@ -55,7 +56,7 @@ app.index_string = f"""
         <!-- Schema.org markup for Google+ -->
         <meta itemprop="name" content="Historical Winds at Alaska Airports">
         <meta itemprop="description" content="Explore historical wind data for Alaska airports">
-        <meta itemprop="image" content="http://snap.uaf.edu/tools/airport-winds/wind-rose.png">
+        <meta itemprop="image" content="http://snap.uaf.edu/tools/airport-winds/assets/wind-rose.png">
 
         <!-- Twitter Card data -->
         <meta name="twitter:card" content="summary_large_image">
@@ -64,13 +65,13 @@ app.index_string = f"""
         <meta name="twitter:description" content="Explore historical wind data for Alaska airports">
         <meta name="twitter:creator" content="@SNAPandACCAP">
         <!-- Twitter summary card with large image must be at least 280x150px -->
-        <meta name="twitter:image:src" content="http://snap.uaf.edu/tools/airport-winds/wind-rose.png">
+        <meta name="twitter:image:src" content="http://snap.uaf.edu/tools/airport-winds/assets/wind-rose.png">
 
         <!-- Open Graph data -->
         <meta property="og:title" content="Historical Winds at Alaska Airports" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="http://snap.uaf.edu/tools/airport-winds" />
-        <meta property="og:image" content="http://snap.uaf.edu/tools/airport-winds/wind-rose.png" />
+        <meta property="og:image" content="http://snap.uaf.edu/tools/airport-winds/assets/wind-rose.png" />
         <meta property="og:description" content="Explore historical wind data for Alaska airports" />
         <meta property="og:site_name" content="Historical Winds at Alaska Airports" />
 
@@ -89,18 +90,16 @@ app.index_string = f"""
     </body>
 </html>
 """
-app.title = "WRCC Alaska Winds"
+app.title = "WRCC Historical Winds at Alaska Airports"
 app.layout = layout
 
 
 @app.callback(Output("airports-dropdown", "value"), [Input("map", "clickData")])
 def update_place_dropdown(selected_on_map):
     """ If user clicks on the map, update the drop down. """
-
     # Look up ID by name -- kind of backwards, but
     # it's because we can't bundle much data into
     # map click handles.
-    # TODO look at customdata property here
     if selected_on_map is not None:
         c = luts.map_data[
             luts.map_data["real_name"] == selected_on_map["points"][0]["text"]
@@ -175,7 +174,6 @@ def get_rose_calm_sxs_annotations(titles, calm):
     k = 0
     for anno in calm_annotations:
         anno["y"] = anno["y"] - 0.556
-        # anno["y"] = anno["y"] - 0.01
         anno["font"] = {"color": "#000", "size": 10}
         calm_text = str(int(round(calm.iloc[k]["percent"] * 100))) + "%"
         if calm.iloc[k]["percent"] > 0.2:
@@ -238,8 +236,8 @@ def add_runway_traces(sid, fig, height):
 
     airport = luts.airport_meta[luts.airport_meta["sid"] == sid]
 
-    for i, row in airport.iterrows():
-        fig = add_runway(fig, row)
+    for row in airport.iterrows():
+        fig = add_runway(fig, row[1])
 
     # removes the "trace X" text for runway traces
     for trace in fig["data"][3:]:
@@ -297,8 +295,10 @@ def update_exceedance_plot(sid, units):
 
     for i in [0, 1, 2]:
         fig["data"][i]["name"] = luts.exceedance_units[units][fig["data"][i]["name"]]
-    
-    fig.update_traces(hovertemplate="RDC Class: %{customdata}<br>Runway direction: %{x}°<br>Exceedance frequency: %{y}%")    
+
+    fig.update_traces(
+        hovertemplate="RDC Class: %{customdata}<br>Runway direction: %{x}°<br>Exceedance frequency: %{y}%"
+    )
 
     return fig
 
@@ -489,7 +489,7 @@ def update_rose_monthly(sid, units, coarse):
             traces = []
             d = station_rose[station_rose["month"] == month]
             max_axes = max_axes.append(
-                get_rose_traces(d, traces, month, if_show_legend), ignore_index=True
+                get_rose_traces(d, traces, units, if_show_legend), ignore_index=True
             )
             for trace in traces:
                 fig.add_trace(trace, row=i, col=j)
@@ -568,8 +568,6 @@ def update_rose_monthly(sid, units, coarse):
         plot_bgcolor=luts.background_color,
         # We need to explicitly define the rotations
         # we need for each named subplot.
-        # TODO is there a more elegant way to
-        # generate this list of things?
         polar1={**polar_props, **{"hole": c.iloc[0]["percent"]}},
         polar2={**polar_props, **{"hole": c.iloc[1]["percent"]}},
         polar3={**polar_props, **{"hole": c.iloc[2]["percent"]}},
@@ -634,7 +632,6 @@ def update_box_plots(sid):
     )
 
 
-# function to check sufficient data for side-by-side and diff? Need a invisible placeholder in the gui?
 # This function should return the filtered data, so it can be used by both sxs rose and diff rose
 @app.callback(
     Output("comparison-rose-data", "value"),
@@ -643,6 +640,10 @@ def update_box_plots(sid):
 def get_comparison_data(sid, coarse):
     """Prep data that will be used in the side-by-side roses and
     the difference polar line chart
+
+    Returns the comparison rose data for the selected station.
+    We need the app to hide sxs and diff rose charts if there isn't enough data.
+    Use an invisible data container to do that.
     """
     station_name = luts.map_data.loc[sid]["real_name"]
     station_roses = sxs_roses.loc[
@@ -651,8 +652,10 @@ def get_comparison_data(sid, coarse):
     # available decades for particular station
     available_decades = station_roses["decade"].unique()
     # if none, return blank template plot
+    # with an annotation letting the user know that
+    # there's not enough data to display this chart.
     if (len(available_decades) == 0) or ("2010-2019" not in available_decades):
-        # if insufficient data, return empty trace dict
+        # empty trace dict to make blank plot
         return {
             "trace_dict": {
                 "marker_color": "#fff",
@@ -704,11 +707,25 @@ def get_comparison_data(sid, coarse):
     }
 
 
+def make_empty_sxs_rose(empty_trace, subplot_args, rose_layout, rose_dict):
+    """Helper function for update_rose_sxs to create empty figure"""
+    rose_layout["title"]["text"] = ""
+
+    fig = make_subplots(**subplot_args)
+    fig.update_layout(**rose_layout)
+
+    traces = [empty_trace, empty_trace]
+    _ = [fig.add_trace(traces[i], row=1, col=(i + 1)) for i in [0, 1]]
+
+    fig.add_annotation(rose_dict["anno_dict"])
+
+    return fig
+
+
 @app.callback(
     Output("rose_sxs", "figure"),
     [Input("comparison-rose-data", "value"), Input("units_selector", "value")],
 )
-# def update_rose_sxs(sid):
 def update_rose_sxs(rose_dict, units):
     """
     Create side-by-side (sxs) plot of wind roses from different decades
@@ -755,7 +772,7 @@ def update_rose_sxs(rose_dict, units):
 
     station_name = luts.map_data.loc[rose_dict["sid"]]["real_name"]
 
-    layout = {
+    rose_layout = {
         "title": dict(
             text="Historical wind comparison, " + station_name,
             font=dict(family="Open Sans", size=18),
@@ -769,33 +786,20 @@ def update_rose_sxs(rose_dict, units):
         "plot_bgcolor": luts.background_color,
         # We need to explicitly define the rotations
         # we need for each named subplot.
-        # TODO is there a more elegant way to
-        # generate this list of things?
         "polar1": {**polar_props, **{"hole": 0.1}},
         "polar2": {**polar_props, **{"hole": 0.1}},
     }
 
-    # this handles case of insufficient data for station,
     try:
+        # this handles case of insufficient data for station
+        # trace_dict only present if insufficient data for comparison
         empty_trace = go.Barpolar(rose_dict["trace_dict"])
-
-        layout["title"]["text"] = ""
-
-        fig = make_subplots(**subplot_args)
-        fig.update_layout(**layout)
-
-        traces = [empty_trace, empty_trace]
-        _ = [fig.add_trace(traces[i], row=1, col=(i + 1)) for i in [0, 1]]
-
-        fig.add_annotation(rose_dict["anno_dict"])
-
-        return fig
+        return make_empty_sxs_rose(empty_trace, subplot_args, rose_layout, rose_dict)
 
     except KeyError:
         # continue
-        None
+        pass
 
-    # subplot_args["subplot_titles"] = subplot_titles
     subplot_args["subplot_titles"] = rose_dict["target_decades"]
     fig = make_subplots(**subplot_args)
 
@@ -826,8 +830,8 @@ def update_rose_sxs(rose_dict, units):
         i["text"] = "<b>" + i["text"] + "</b>"
 
     station_calms = pd.DataFrame(rose_dict["calms_dict"])
-    layout["polar1"]["hole"] = station_calms.iloc[0]["percent"]
-    layout["polar2"]["hole"] = station_calms.iloc[1]["percent"]
+    rose_layout["polar1"]["hole"] = station_calms.iloc[0]["percent"]
+    rose_layout["polar2"]["hole"] = station_calms.iloc[1]["percent"]
 
     # Get calms as annotations, then merge
     # them into the subgraph title annotations
@@ -835,7 +839,7 @@ def update_rose_sxs(rose_dict, units):
         "annotations"
     ] + get_rose_calm_sxs_annotations(fig["layout"]["annotations"], station_calms)
 
-    fig.update_layout(**layout)
+    fig.update_layout(**rose_layout)
 
     return fig
 
@@ -890,19 +894,20 @@ def update_diff_rose(rose_dict, units, coarse):
             },
             "hole": 0.2,
         },
-        #"plot_bgcolor": luts.background_color,
         "paper_bgcolor": luts.background_color,
     }
 
     try:
+        # this handles case of insufficient data for station
+        # trace_dict only present if insufficient data for comparison
         empty_trace = go.Barpolar(rose_dict["trace_dict"])
         rose_layout["annotations"] = [rose_dict["anno_dict"]]
 
         return {"layout": rose_layout, "data": [empty_trace]}
 
     except KeyError:
-        # Thrown in case that there is sufficient data for this graphic
-        None
+        # Thrown if there is sufficient data for this graphic
+        pass
 
     data_list = [pd.DataFrame(df_dict) for df_dict in rose_dict["data_list"]]
 
@@ -916,11 +921,7 @@ def update_diff_rose(rose_dict, units, coarse):
     station_calms = pd.DataFrame(rose_dict["calms_dict"])
     # compute calm difference
     calm_diff = station_calms.iloc[1]["percent"] - station_calms.iloc[0]["percent"]
-    calm_lut = {
-        True: {"text": "increased", "fill": "#bbb"},
-        False: {"text": "decreased", "fill": luts.speed_ranges["10-14"]["color"]},
-    }
-    calm_change = calm_lut[calm_diff > 0]
+    calm_change = luts.calm_diff_lut[calm_diff > 0]
     calm_text = (
         f"calms <b>{calm_change['text']}</b><br>by {abs(round(calm_diff * 100, 1))}%"
     )

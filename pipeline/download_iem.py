@@ -1,12 +1,15 @@
+# pylint: disable=C0103,C0301,E0401
 """Download ASOS wind data for preprocessing and app ingest
 
-Currently hardwired to download all wind speed and direction data for 
+Currently hardwired to download all wind speed and direction data for
 all AK_ASOS network stations, for 1980-2020
 """
 
-import os, requests, time
+import os
+import time
 from multiprocessing import Pool
 from pathlib import Path
+import requests
 
 
 BASE_URI = "http://mesonet.agron.iastate.edu/"
@@ -21,17 +24,15 @@ def get_stations(network):
     Returns:
         a list of four letter ICAO station identifiers
     """
-    uri = (
-        f"{BASE_URI}geojson/network/{network}.geojson"
-    )
+    uri = f"{BASE_URI}geojson/network/{network}.geojson"
     r = requests.get(uri)
     jdict = r.json()
-    return  [site["properties"]["sid"] for site in jdict["features"]]
+    return [site["properties"]["sid"] for site in jdict["features"]]
 
 
 def make_uris(sids, start, end):
     """Make the URIs for all stations
-    
+
     Args:
         sids (list): List of IACO station identifiers (str)
         start (str): Starting date in YYYY-mm-dd
@@ -58,11 +59,11 @@ def make_uris(sids, start, end):
 
 def get_with_retry(uri, max_retry=5):
     """Wrapper for requests.get() to retry
-    
+
     Args:
-        uri (str): URI to request 
+        uri (str): URI to request
         max_retry (int): number of retries to make
-    
+
     Returns:
         the requests response
     """
@@ -81,38 +82,38 @@ def get_with_retry(uri, max_retry=5):
 
 def download_file(uri, out_fp):
     """Download a single file to a directory
-    
+
     Args:
         uri (str): uri of query to download
         out_fp (PosixPath): PosixPath object of output filepath
-    
+
     Returns:
         path to the downloaded file
     """
-
-    # make filename from URI
-    sid = uri.split("station=")[1][:4]
     # download and write
     r = get_with_retry(uri)
     if r.status_code == 200:
-        f = open(out_fp, 'w')
+        f = open(out_fp, "w")
         f.write(r.text)
         f.close()
-        return str(out_fp)
+        # convert path to string if successful download
+        out_fp = str(out_fp)
     else:
         print(f"{uri} download failed.")
+
+    return out_fp
 
 
 def run_download(network, start, end, out_dir, ncpus=8):
     """Download urls to an output directory in parallel
-    
+
     Args:
         network (str): name of ASOS network on IEM (e.g. AK_ASOS)
-        start (str): start date string (YYYY-mm-dd) 
+        start (str): start date string (YYYY-mm-dd)
         end (str): end date string (YYYY-mm-dd)
         out_dir (PosixPath): PosixPath object of directory to write files
         ncpus (int): number of cores to use in downloading files in parallel
-    
+
     Returns:
         paths of successfully downloaded files
     """
@@ -126,16 +127,16 @@ def run_download(network, start, end, out_dir, ncpus=8):
 
     print(f"Downloading {len(uris)} files", sep="...")
 
-    dl_args = [(uri, fp) for uri, fp in zip(uris, out_fps)]
     with Pool(ncpus) as pool:
-        out_fps = pool.starmap(download_file, dl_args)
-    
+        out_fps = pool.starmap(download_file, zip(uris, out_fps))
+
     print("done.")
 
     return out_fps
 
 
 def main():
+    """Execute the data download commands."""
     tic = time.perf_counter()
 
     # hardwired download to BASE_DIR
@@ -151,8 +152,8 @@ def main():
 
     print(f"Elapsed time: {round(time.perf_counter() - tic, 1)} s")
     print("Downloaded files:\n")
-    _ = [print(fp) for fp in out_fps]
+    _ = [print(fp) for fp in out_fps if isinstance(fp, Path)]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

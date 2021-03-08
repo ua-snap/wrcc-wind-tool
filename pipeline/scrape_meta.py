@@ -1,17 +1,18 @@
+# pylint: disable=C0103,C0301,E0401
 """Scrape the FAA identifier and other info from IEM and AirNav
 based on IEM ASOS identifier
 
 Writes a complete file of station info as "airport_meta.csv"
 
 Notes:
-    This method seems more straightforward than downloading data from FAA, 
+    This method seems more straightforward than downloading data from FAA,
     could not find FAA resource making use of ICAO identifiers.
 """
 
-import argparse, os, requests, time
+import argparse
+import time
 import pandas as pd
-from multiprocessing import Pool
-from pathlib import Path
+import requests
 
 
 def scrape_asos_meta():
@@ -87,25 +88,24 @@ def scrape_airnav(uri):
     # get common name for airport
     try:
         name = page_html.split(f"{stid} - ")[1].split("<")[0]
-    except:
+    except IndexError:
         print(f"{stid} name not found")
-        exit()
+
     # this gives list of strings for each runway
     rw_info = page_html.split("Runway Information</H3>\n")[1].split("<H4>")[1:]
     try:
         airport = parse_runway_info(rw_info)
     except IndexError:
-        print(stid)
-        exit("exit")
+        print(f"No runways found for {stid}")
+
     airport["faa_id"] = faa_id
     airport["real_name"] = name
-    airport["sid"] = stid
+    airport["stid"] = stid
 
-    print(airport)
     return airport
 
 
-def run_scrape_airnav(meta, ncpus):
+def run_scrape_airnav(meta):
     """Scrape data from AirNav.com and add to meta data frame
 
     Returns:
@@ -116,41 +116,26 @@ def run_scrape_airnav(meta, ncpus):
     # construct uris
     uris = [base_uri.format(stid) for stid in meta["stid"].unique()]
 
-    print(f"Scraping AirNav.com data using {ncpus} cores", end="...")
-    print(f"Scraping AirNav.com data for all stations, this could take a while", end="...")
+    print(
+        "Scraping AirNav.com data for all stations, this could take a while...",
+    )
     tic = time.perf_counter()
-
-    # with Pool(ncpus) as pool:
-        # airnav_df = pd.concat(pool.map(scrape_airnav, uris))
 
     airnav_df = pd.concat([scrape_airnav(uri) for uri in uris])
 
     print(f"done, {round(time.perf_counter() - tic, 2)}s")
 
-    return meta.merge(airnav_df, on="stid")
+    # merge with meta to include other metadata
+    return meta.merge(airnav_df, on="stid").rename(columns={"stid": "sid"})
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Extract the date ranges of historical 8-day MODIS data"
-    )
-    parser.add_argument(
-        "-n",
-        "--ncpus",
-        action="store",
-        dest="ncpus",
-        type=int,
-        default=8,
-        help="Number of cores to use with multiprocessing",
-    )
-    args = parser.parse_args()
-    ncpus = args.ncpus
-
-    meta = scrape_asos_meta()
-    meta = run_scrape_airnav(meta, ncpus)
+    """Execute the metadata scraping"""
+    asos_meta = scrape_asos_meta()
+    airport_meta = run_scrape_airnav(asos_meta)
 
     out_fp = "data/airport_meta.csv"
-    meta.to_csv(out_fp, index=False)
+    airport_meta.to_csv(out_fp, index=False)
 
     print(f"Airport metadata saved to to {out_fp}")
 

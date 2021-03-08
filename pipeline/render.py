@@ -1,8 +1,12 @@
-"""Render the jupyter notebooks used for project updates"""
+# pylint: disable=C0103,C0301,E0401
+"""Render a jupyter notebook to html,
+designed for notebooks in ancillary/"""
 
-import argparse, subprocess
+import argparse
+import subprocess
 
-if __name__ == "__main__":
+def main():
+    """Render a jupyter notebook to html"""
     parser = argparse.ArgumentParser(
         description="Render a .ipynb to html using nbconvert (for project updates)"
     )
@@ -43,3 +47,6 @@ if __name__ == "__main__":
         "--execute",
     ]
     subprocess.Popen(command)
+
+if __name__ == "__main__":
+    main()

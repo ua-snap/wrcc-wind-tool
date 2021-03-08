@@ -1,19 +1,21 @@
+# pylint: disable=C0103,C0301,E0401
 """Pre-process station data for app ingest"""
 
-# hacky, done to alllow import from luts.py in app dir
-import os, sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# pylint: disable=all
-import argparse, math, time
-import numpy as np
-import pandas as pd
+import argparse
+import math
+import os
+import sys
+import time
 from datetime import datetime
-from luts import speed_ranges, exceedance_classes
 from multiprocessing import Pool
 from pathlib import Path
 from random import choice
+import numpy as np
+import pandas as pd
 from scipy.stats import ks_2samp
+# this hack is done to alllow import from luts.py in app dir
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from luts import speed_ranges, exceedance_classes
 
 
 def check_sufficient_comparison_rose_data(station, r1=0.25, r2=0.75):
@@ -307,7 +309,9 @@ def process_roses(stations, ncpus, roses_fp, discard_obs_fp):
     compare_station_dfs = [tup[0] for tup in adjustment_results]
     discarded_obs = pd.concat([tup[1] for tup in adjustment_results])
 
-    print(f"Station data adjusted, chunking comparison roses, {round(time.perf_counter() - tic, 2)}s.")
+    print(
+        f"Station data adjusted, chunking comparison roses, {round(time.perf_counter() - tic, 2)}s."
+    )
     tic = time.perf_counter()
 
     # finally can chunk to rose for comparison roses - first filter out calms
@@ -332,7 +336,9 @@ def process_roses(stations, ncpus, roses_fp, discard_obs_fp):
 
     print(f"Comparison roses done, {round(time.perf_counter() - tic, 2)}s.")
     print(f"Preprocessed data for wind roses written to {roses_fp}")
-    print(f"Discarded observations for comparison wind roses written to {discard_obs_fp}")
+    print(
+        f"Discarded observations for comparison wind roses written to {discard_obs_fp}"
+    )
 
     return roses
 
@@ -485,7 +491,6 @@ def process_crosswinds(stations, ncpus, exceedance_fp):
 
 def process_wep(stations, mean_wep_fp):
     """Process wind energy potential"""
-    # print(f"Preprocessing weind energy potential using {ncpus} cores", end="...")
     print(f"Preprocessing wind energy potential", end="...")
     tic = time.perf_counter()
 
@@ -501,8 +506,8 @@ def process_wep(stations, mean_wep_fp):
     # first convert ws to m/s
     stations["ws"] = stations["ws"].astype(np.float32) / 2.237
     # adjust for height using the log-law: https://websites.pmc.ucsc.edu/~jnoble/wind/extrap/
-    # v ~ v_ref * log(z / z_0) / log(z_ref / z_0) where 
-    # z_0 = 0.5 (roughness length of 0.0005 for "airport" landscape type), 
+    # v ~ v_ref * log(z / z_0) / log(z_ref / z_0) where
+    # z_0 = 0.5 (roughness length of 0.0005 for "airport" landscape type),
     # z_ref = 10, known speed height (10m)
     # z = 100, approx height of typical wind turbine
     # v_ref is the known speed at z_ref height
@@ -518,7 +523,12 @@ def process_wep(stations, mean_wep_fp):
     mean_wep = wep.groupby(["sid", "year", "month"]).mean().reset_index()
     mean_wep["wep"] = np.round(mean_wep["wep"])
     mean_wep = mean_wep.astype({"year": "int16", "month": "int16"})
-    outlier_thresholds = mean_wep.groupby(["sid", "month"])["wep"].std().reset_index().rename(columns={"wep": "std"})
+    outlier_thresholds = (
+        mean_wep.groupby(["sid", "month"])["wep"]
+        .std()
+        .reset_index()
+        .rename(columns={"wep": "std"})
+    )
     outlier_thresholds["std"] = outlier_thresholds["std"] * 5
     mean_wep = mean_wep.merge(outlier_thresholds, on=["sid", "month"])
     mean_wep = mean_wep[mean_wep["wep"] < mean_wep["std"]].drop(columns="std")
@@ -531,9 +541,10 @@ def process_wep(stations, mean_wep_fp):
     return mean_wep
 
 
-if __name__ == "__main__":
+def main():
+    """Execute the preprocessing code"""
     parser = argparse.ArgumentParser(
-        description="Extract the date ranges of historical 8-day MODIS data"
+        description="Pre-process station data for app ingest"
     )
     parser.add_argument(
         "-n",
@@ -605,3 +616,7 @@ if __name__ == "__main__":
     if do_wep:
         wep_quantiles_fp = "data/mean_wep.pickle"
         wep = process_wep(stations, wep_quantiles_fp)
+
+
+if __name__ == "__main__":
+    main()    
