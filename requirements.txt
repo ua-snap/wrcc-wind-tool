@@ -17,7 +17,6 @@ dash-dangerously-set-inner-html==0.0.2
 dash-html-components==1.1.2
 dash-renderer==1.9.0
 dash-table==4.11.2
-dask==2021.2.0
 decorator==4.4.2
 defusedxml==0.7.0
 entrypoints==0.3
