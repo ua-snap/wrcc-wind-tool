@@ -258,3 +258,8 @@ exceedance_classes = [
 ]
 
 background_color = "#EFEFEF"
+
+calm_diff_lut = {
+    True: {"text": "increased", "fill": "#bbb"},
+    False: {"text": "decreased", "fill": speed_ranges["10-14"]["color"]},
+}
