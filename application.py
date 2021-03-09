@@ -262,14 +262,14 @@ def update_exceedance_plot(sid, units):
 
     fig.update_yaxes(rangemode="tozero")
 
+    fig.update_traces(
+        hovertemplate="RDC Class: %{customdata}<br>Runway direction: %{x}°<br>Exceedance frequency: %{y}%"
+    )
+
     fig = add_runway_traces(sid, fig, df["exceedance"].max())
 
     for i in [0, 1, 2]:
         fig["data"][i]["name"] = luts.exceedance_units[units][fig["data"][i]["name"]]
-
-    fig.update_traces(
-        hovertemplate="RDC Class: %{customdata}<br>Runway direction: %{x}°<br>Exceedance frequency: %{y}%"
-    )
 
     return fig
 
