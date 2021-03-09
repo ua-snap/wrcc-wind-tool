@@ -227,7 +227,8 @@ def update_exceedance_plot(sid, units):
     df = exceedance.loc[exceedance["sid"] == sid]
 
     station_name = luts.map_data.loc[sid]["real_name"]
-    title = f"Runway direction vs. allowable crosswind exceedance, {station_name}"
+    start_year = max(pd.to_datetime(luts.map_data.loc[sid]["begints"]).year, 1980)
+    title = f"Runway direction vs. allowable crosswind exceedance, {station_name}, {start_year}-present"
 
     fig = px.line(
         df,
@@ -255,8 +256,10 @@ def update_exceedance_plot(sid, units):
                 "fixedrange": True,
             },
             "xaxis": {"showline": True, "linecolor": "black", "fixedrange": True,},
-            "font": {"size": 14},
+            "font": {"size": 14, "family": "Open Sans"},
             "hovermode": "closest",
+            "title_x": 0.5,
+            "title_font": {"size": 18}, 
         }
     )
 
@@ -562,13 +565,14 @@ def update_box_plots(sid):
 
     d = mean_wep.loc[(mean_wep["sid"] == sid)]
     station_name = luts.map_data.loc[sid]["real_name"]
+    start_year = max(pd.to_datetime(luts.map_data.loc[sid]["begints"]).year, 1980)
 
     return go.Figure(
         layout=dict(
             template=luts.plotly_template,
             font=dict(family="Open Sans", size=14),
             title=dict(
-                text=f"Average monthly wind energy potential for {station_name}, 100m height",
+                text=f"Average monthly wind energy potential (100m height) for {station_name}, {start_year}-present",
                 font=dict(size=18, family="Open Sans"),
                 x=0.5,
             ),
