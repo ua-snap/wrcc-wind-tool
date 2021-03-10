@@ -212,9 +212,7 @@ wind_rose_section = wrap_in_section(
         children=[
             html.Div(
                 className="column is-four-fifths",
-                children=[
-                    dcc.Graph(id="rose", figure=go.Figure(), config=luts.fig_configs,),
-                ],
+                children=[dcc.Graph(id="rose", figure=go.Figure(),),],
             ),
             html.Div(
                 className="column is-one-fifth",
@@ -235,7 +233,7 @@ monthly_wind_rose_intro = wrap_in_section(
 )
 
 monthly_wind_rose_section = wrap_in_section(
-    dcc.Graph(id="rose_monthly", figure=go.Figure(), config=luts.fig_configs,)
+    dcc.Graph(id="rose_monthly", figure=go.Figure(),)
 )
 
 crosswind_intro = wrap_in_section(
@@ -250,7 +248,7 @@ crosswind_intro = wrap_in_section(
 )
 
 crosswind_section = wrap_in_section(
-    dcc.Graph(id="exceedance_plot", figure=go.Figure(), config=luts.fig_configs,)
+    dcc.Graph(id="exceedance_plot", figure=go.Figure(),)
 )
 
 wind_energy_intro = wrap_in_section(
@@ -272,9 +270,7 @@ wind_energy_intro = wrap_in_section(
     container_classes="content is-size-5",
 )
 
-wind_energy_section = wrap_in_section(
-    dcc.Graph(id="wep_box", figure=go.Figure(), config=luts.fig_configs,)
-)
+wind_energy_section = wrap_in_section(dcc.Graph(id="wep_box", figure=go.Figure(),))
 
 historical_roses_intro = wrap_in_section(
     ddsih.DangerouslySetInnerHTML(
@@ -288,7 +284,7 @@ historical_roses_intro = wrap_in_section(
 )
 
 historical_roses_section = wrap_in_section(
-    dcc.Graph(id="rose_sxs", figure=go.Figure(), config=luts.fig_configs,)
+    dcc.Graph(id="rose_sxs", figure=go.Figure(),)
 )
 
 historical_change_intro = wrap_in_section(
@@ -303,7 +299,7 @@ historical_change_intro = wrap_in_section(
 )
 
 historical_change_section = wrap_in_section(
-    dcc.Graph(id="rose_diff", figure=go.Figure(), config=luts.fig_configs,),
+    dcc.Graph(id="rose_diff", figure=go.Figure(),),
 )
 
 help_text = wrap_in_section(
