@@ -798,15 +798,12 @@ def update_rose_sxs(rose_dict, units):
         "polar2": {**polar_props, **{"hole": 0.1}},
     }
 
-    try:
+    if "trace_dict" in rose_dict:
         # this handles case of insufficient data for station
         # trace_dict only present if insufficient data for comparison
         empty_trace = go.Barpolar(rose_dict["trace_dict"])
-        return make_empty_sxs_rose(empty_trace, subplot_args, rose_layout, rose_dict)
 
-    except KeyError:
-        # continue
-        pass
+        return make_empty_sxs_rose(empty_trace, subplot_args, rose_layout, rose_dict)
 
     subplot_args["subplot_titles"] = rose_dict["target_decades"]
     fig = make_subplots(**subplot_args)
@@ -855,14 +852,12 @@ def update_rose_sxs(rose_dict, units):
 @app.callback(Output("rose_sxs", "config"), Input("comparison-rose-data", "value"))
 def update_sxs_rose_config(rose_dict):
     config = copy.deepcopy(luts.fig_configs)
-    try:
-        # try to load list of comparison rose data as test for
-        # sufficient comparison rose data
-        _ = rose_dict["data_list"]
-        # if that doesn't error, can proceed to update filename for download
+    if "data_list" in rose_dict:
+        # if true, then there is sufficient data for comparison roses
+        # and can proceed to update filename for download
         sid = rose_dict["sid"]
         config["toImageButtonOptions"]["filename"] = f"{sid}_comparison_wind_rose"
-    except KeyError:
+    else:
         # if it's not there, disable download button
         config["modeBarButtonsToRemove"].append("toImage")
 
@@ -922,17 +917,13 @@ def update_diff_rose(rose_dict, units, coarse):
         "paper_bgcolor": luts.background_color,
     }
 
-    try:
+    if "trace_dict" in rose_dict:
         # this handles case of insufficient data for station
         # trace_dict only present if insufficient data for comparison
         empty_trace = go.Barpolar(rose_dict["trace_dict"])
         rose_layout["annotations"] = [rose_dict["anno_dict"]]
 
         return {"layout": rose_layout, "data": [empty_trace]}
-
-    except KeyError:
-        # Thrown if there is sufficient data for this graphic
-        pass
 
     data_list = [pd.DataFrame(df_dict) for df_dict in rose_dict["data_list"]]
 
@@ -987,14 +978,12 @@ def update_diff_rose(rose_dict, units, coarse):
 @app.callback(Output("rose_diff", "config"), Input("comparison-rose-data", "value"))
 def update_diff_rose_config(rose_dict):
     config = copy.deepcopy(luts.fig_configs)
-    try:
-        # try to load list of comparison rose data as test for
-        # sufficient comparison rose data
-        _ = rose_dict["data_list"]
-        # if that doesn't error, can proceed to update filename for download
+    if "data_list" in rose_dict:
+        # if true, then there is sufficient data for comparison roses
+        # and can proceed to update filename for download
         sid = rose_dict["sid"]
         config["toImageButtonOptions"]["filename"] = f"{sid}_change_in_winds"
-    except KeyError:
+    else:
         # if it's not there, disable download button
         config["modeBarButtonsToRemove"].append("toImage")
 

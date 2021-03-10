@@ -119,9 +119,9 @@ def remove_asos_awos(location):
 
 def format_location_name(station_name, sid):
     """Uses new location names"""
-    try:
+    if sid in luts.new_location_names:
         return luts.new_location_names[sid]
-    except KeyError:
+    else:
         return station_name
 
 
