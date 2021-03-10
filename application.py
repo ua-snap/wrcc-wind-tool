@@ -259,7 +259,7 @@ def update_exceedance_plot(sid, units):
             "font": {"size": 14, "family": "Open Sans"},
             "hovermode": "closest",
             "title_x": 0.5,
-            "title_font": {"size": 18}, 
+            "title_font": {"size": 18},
         }
     )
 
@@ -275,6 +275,14 @@ def update_exceedance_plot(sid, units):
         fig["data"][i]["name"] = luts.exceedance_units[units][fig["data"][i]["name"]]
 
     return fig
+
+
+@app.callback(Output("exceedance_plot", "config"), Input("airports-dropdown", "value"))
+def update_exceedance_plot_config(sid):
+    config = copy.deepcopy(luts.fig_configs)
+    config["toImageButtonOptions"]["filename"] = f"{sid}_crosswind_exceedance"
+
+    return config
 
 
 def get_rose_traces(d, traces, units, showlegend=False, lines=False):
@@ -398,6 +406,14 @@ def update_rose(sid, units, coarse):
     }
 
     return {"layout": rose_layout, "data": traces}
+
+
+@app.callback(Output("rose", "config"), Input("airports-dropdown", "value"))
+def update_rose_config(sid):
+    config = copy.deepcopy(luts.fig_configs)
+    config["toImageButtonOptions"]["filename"] = f"{sid}_summary_wind_rose"
+
+    return config
 
 
 def get_rose_calm_month_annotations(titles, calm):
@@ -559,6 +575,14 @@ def update_rose_monthly(sid, units, coarse):
     return fig
 
 
+@app.callback(Output("rose_monthly", "config"), Input("airports-dropdown", "value"))
+def update_monthly_rose_config(sid):
+    config = copy.deepcopy(luts.fig_configs)
+    config["toImageButtonOptions"]["filename"] = f"{sid}_monthly_wind_rose"
+
+    return config
+
+
 @app.callback(Output("wep_box", "figure"), [Input("airports-dropdown", "value")])
 def update_box_plots(sid):
     """ Generate box plot for monthly averages """
@@ -607,7 +631,16 @@ def update_box_plots(sid):
     )
 
 
-# This function should return the filtered data, so it can be used by both sxs rose and diff rose
+@app.callback(Output("wep_box", "config"), Input("airports-dropdown", "value"))
+def update_monthly_rose_config(sid):
+    config = luts.fig_configs
+    config["toImageButtonOptions"]["filename"] = f"{sid}_wind_energy_potential_boxplots"
+
+    return config
+
+
+# This function should return the filtered data,
+# so it can be used by both sxs rose and diff rose
 @app.callback(
     Output("comparison-rose-data", "value"),
     [Input("airports-dropdown", "value"), Input("rose-coarse", "value")],
@@ -819,6 +852,23 @@ def update_rose_sxs(rose_dict, units):
     return fig
 
 
+@app.callback(Output("rose_sxs", "config"), Input("comparison-rose-data", "value"))
+def update_sxs_rose_config(rose_dict):
+    config = copy.deepcopy(luts.fig_configs)
+    try:
+        # try to load list of comparison rose data as test for
+        # sufficient comparison rose data
+        _ = rose_dict["data_list"]
+        # if that doesn't error, can proceed to update filename for download
+        sid = rose_dict["sid"]
+        config["toImageButtonOptions"]["filename"] = f"{sid}_comparison_wind_rose"
+    except KeyError:
+        # if it's not there, disable download button
+        config["modeBarButtonsToRemove"].append("toImage")
+
+    return config
+
+
 @app.callback(
     Output("rose_diff", "figure"),
     [
@@ -932,6 +982,23 @@ def update_diff_rose(rose_dict, units, coarse):
     ] = f"Change in winds from {decade1} to {decade2}, {station_name}"
 
     return {"layout": rose_layout, "data": traces}
+
+
+@app.callback(Output("rose_diff", "config"), Input("comparison-rose-data", "value"))
+def update_diff_rose_config(rose_dict):
+    config = copy.deepcopy(luts.fig_configs)
+    try:
+        # try to load list of comparison rose data as test for
+        # sufficient comparison rose data
+        _ = rose_dict["data_list"]
+        # if that doesn't error, can proceed to update filename for download
+        sid = rose_dict["sid"]
+        config["toImageButtonOptions"]["filename"] = f"{sid}_change_in_winds"
+    except KeyError:
+        # if it's not there, disable download button
+        config["modeBarButtonsToRemove"].append("toImage")
+
+    return config
 
 
 if __name__ == "__main__":
