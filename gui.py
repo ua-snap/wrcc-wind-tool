@@ -176,16 +176,17 @@ units_radios_field = html.Div(
 rose_res_radios_field = html.Div(
     className="field radio-selector",
     children=[
-        html.Label("Wind rose display", className="label"),
+        html.Label("Wind rose display petals", className="label"),
         dcc.RadioItems(
-            id="rose-coarse",
+            id="rose-pcount",
             labelClassName="radio",
             className="control",
             options=[
-                {"label": "fine", "value": False},
-                {"label": "coarse", "value": True},
+                {"label": "8 (coarse)", "value": 8},
+                {"label": "16", "value": 16},
+                {"label": "32 (fine)", "value": 36},
             ],
-            value=False,
+            value=16,
         ),
     ],
 )

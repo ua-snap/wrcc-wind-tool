@@ -114,7 +114,6 @@ def update_place_dropdown(selected_on_map):
 )
 def update_selected_airport_on_map(sid):
     """ Draw a second trace on the map with one community highlighted. """
-    # print(sid)
 
     return {
         "data": [
@@ -334,14 +333,14 @@ def get_rose_traces(d, traces, units, showlegend=False, lines=False):
     [
         Input("airports-dropdown", "value"),
         Input("units_selector", "value"),
-        Input("rose-coarse", "value"),
+        Input("rose-pcount", "value"),
     ],
 )
-def update_rose(sid, units, coarse):
+def update_rose(sid, units, pcount):
     """Generate cumulative wind rose for selected airport"""
     station_name = luts.map_data.loc[sid]["real_name"]
     station_rose = roses.loc[
-        (roses["sid"] == sid) & (roses["coarse"] == coarse) & (roses["month"] == 0)
+        (roses["sid"] == sid) & (roses["pcount"] == pcount) & (roses["month"] == 0)
     ]
 
     traces = []
@@ -395,7 +394,7 @@ def update_rose(sid, units, coarse):
                 "showticksuffix": "last",
                 "tickcolor": "rgba(0, 0, 0, 0)",
                 "tick0": 0,
-                "dtick": [3, 6][coarse],
+                "dtick": {8:6, 16:4, 36:3}[pcount],
                 "ticklen": 10,
                 "showline": False,  # hide the dark axis line
                 "tickfont": {"color": "#444"},
@@ -445,15 +444,15 @@ def get_rose_calm_month_annotations(titles, calm):
     [
         Input("airports-dropdown", "value"),
         Input("units_selector", "value"),
-        Input("rose-coarse", "value"),
+        Input("rose-pcount", "value"),
     ],
 )
-def update_rose_monthly(sid, units, coarse):
+def update_rose_monthly(sid, units, pcount):
     """
     Create a grid of subplots for all monthly wind roses.
     """
     station_name = luts.map_data.loc[sid]["real_name"]
-    station_rose = roses.loc[(roses["sid"] == sid) & (roses["coarse"] == coarse)]
+    station_rose = roses.loc[(roses["sid"] == sid) & (roses["pcount"] == pcount)]
 
     # t = top margin in % of figure.
     subplot_spec = dict(type="polar", t=0.01)
@@ -643,9 +642,9 @@ def update_monthly_rose_config(sid):
 # so it can be used by both sxs rose and diff rose
 @app.callback(
     Output("comparison-rose-data", "value"),
-    [Input("airports-dropdown", "value"), Input("rose-coarse", "value")],
+    [Input("airports-dropdown", "value"), Input("rose-pcount", "value")],
 )
-def get_comparison_data(sid, coarse):
+def get_comparison_data(sid, pcount):
     """Prep data that will be used in the side-by-side roses and
     the difference polar line chart
 
@@ -655,7 +654,7 @@ def get_comparison_data(sid, coarse):
     """
     station_name = luts.map_data.loc[sid]["real_name"]
     station_roses = sxs_roses.loc[
-        (sxs_roses["sid"] == sid) & (sxs_roses["coarse"] == coarse)
+        (sxs_roses["sid"] == sid) & (sxs_roses["pcount"] == pcount)
     ]
     # available decades for particular station
     available_decades = station_roses["decade"].unique()
@@ -869,10 +868,10 @@ def update_sxs_rose_config(rose_dict):
     [
         Input("comparison-rose-data", "value"),
         Input("units_selector", "value"),
-        Input("rose-coarse", "value"),
+        Input("rose-pcount", "value"),
     ],
 )
-def update_diff_rose(rose_dict, units, coarse):
+def update_diff_rose(rose_dict, units, pcount):
     """Generate difference wind rose by taking difference in
     frequencies of speed/direction bins
     """
@@ -907,7 +906,7 @@ def update_diff_rose(rose_dict, units, coarse):
                 "showticksuffix": "last",
                 "tickcolor": "rgba(0, 0, 0, 0)",
                 "tick0": 0,
-                "dtick": [1, 2][coarse],
+                "dtick": {8:2, 16:2, 36:1}[pcount],
                 "ticklen": 10,
                 "showline": False,  # hide the dark axis line
                 "tickfont": {"color": "#444"},

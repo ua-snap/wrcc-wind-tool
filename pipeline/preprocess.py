@@ -72,6 +72,10 @@ def chunk_to_rose(station):
     bin_list = [list(range(5, 356, 10)), list(np.arange(22.5, 338, 45))]
     bname_list = [list(range(1, 36)), list(np.arange(4.5, 32, 4.5))]
 
+    # bin into three different petal count categories: 8pt, 16pt, and 26pt
+    bin_list = [list(range(5, 356, 10)), list(np.arange(11.25, 349, 22.5)), list(np.arange(22.5, 338, 45))]
+    bname_list = [list(range(1, 36)), list(np.arange(2.25, 34, 2.25)), list(np.arange(4.5, 32, 4.5))]
+
     # Accumulator dataframe.
     proc_cols = [
         "sid",
@@ -80,11 +84,12 @@ def chunk_to_rose(station):
         "count",
         "frequency",
         "decade",
-        "coarse",
+        # "coarse",
+        "pcount",
     ]
     accumulator = pd.DataFrame(columns=proc_cols)
 
-    for bins, bin_names, coarse in zip(bin_list, bname_list, [False, True]):
+    for bins, bin_names, pcount in zip(bin_list, bname_list, [36, 16, 8]):
         # Assign directions to bins.
         # We'll use the exceptional 'NaN' class to represent
         # 355º - 5º, which would otherwise be annoying.
@@ -124,7 +129,8 @@ def chunk_to_rose(station):
                         "frequency": frequency,
                         "decade": station["decade"].iloc[0],
                         "month": station["month"].iloc[0],
-                        "coarse": coarse,
+                        # "coarse": coarse,
+                        "pcount": pcount,
                     },
                     ignore_index=True,
                 )
