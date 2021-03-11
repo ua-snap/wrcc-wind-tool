@@ -158,7 +158,7 @@ units_radios_field = html.Div(
         dcc.RadioItems(
             id="units_selector",
             labelClassName="radio",
-            className="control",
+            className="control vertical radio",
             options=[
                 {"label": "knots", "value": "kts"},
                 {"label": "mph", "value": "mph"},
@@ -176,7 +176,7 @@ rose_res_radios_field = html.Div(
         dcc.RadioItems(
             id="rose-pcount",
             labelClassName="radio",
-            className="control",
+            className="control vertical radio",
             options=[
                 {"label": "8 (coarse)", "value": 8},
                 {"label": "16", "value": 16},

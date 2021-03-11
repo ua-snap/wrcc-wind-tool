@@ -51,6 +51,12 @@ tbody td span {
     color: #666;
 }
 
+.control.vertical.radio label {
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+
 input[type="radio"] {
     margin-right: 1ex;
 }
