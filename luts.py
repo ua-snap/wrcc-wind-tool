@@ -88,6 +88,7 @@ new_location_names = {
     "PAUO": "Willow",
     "PAFA": "Fairbanks",
     "PASN": "St. Paul Island",
+    "PANN": "Nenana",
 }
 
 # remove duplicate rows after discarding runway info to have unique locations
