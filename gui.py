@@ -60,7 +60,7 @@ header = ddsih.DangerouslySetInnerHTML(
 
   <div class="navbar-brand">
     <a class="navbar-item" href="https://wrcc.dri.edu/">
-      <img src="{path_prefix}assets/NOAARCC.svg">
+      <img src="{path_prefix}assets/WRCC.svg">
     </a>
 
     <a class="navbar-item" href="https://www.dri.edu/">
