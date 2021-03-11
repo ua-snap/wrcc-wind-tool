@@ -318,7 +318,7 @@ help_text = wrap_in_section(
 <h4 class="title is-4">Similar tools</h4>
 
 <ul>
-    <li>The <a href="http://windtool.accap.uaf.edu/">ACCAP Community Winds tool</a> takes a climatological approach with much of the same data, and includes model-based projections of future winds</li
+    <li>The <a href="http://windtool.accap.uaf.edu/">ACCAP Community Winds tool</a> takes a climatological approach with much of the same data, and includes model-based projections of future winds.</li
 </ul>
 """
     ),
@@ -370,6 +370,6 @@ layout = html.Div(
         historical_change_section,
         help_text,
         footer,
-        html.P(id="comparison-rose-data"),
+        dcc.Store(id="comparison-rose-data"),
     ],
 )
