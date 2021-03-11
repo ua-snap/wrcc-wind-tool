@@ -180,7 +180,7 @@ rose_res_radios_field = html.Div(
             options=[
                 {"label": "8 (coarse)", "value": 8},
                 {"label": "16", "value": 16},
-                {"label": "32 (fine)", "value": 36},
+                {"label": "36 (fine)", "value": 36},
             ],
             value=16,
         ),
