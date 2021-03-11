@@ -63,10 +63,6 @@ header = ddsih.DangerouslySetInnerHTML(
       <img src="{path_prefix}assets/WRCC.svg">
     </a>
 
-    <a class="navbar-item" href="https://www.dri.edu/">
-      <img src="{path_prefix}assets/DRI.svg">
-    </a>
-
     <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
       <span aria-hidden="true"></span>
       <span aria-hidden="true"></span>
@@ -343,7 +339,7 @@ footer = html.Footer(
     <div class="wrapper is-size-6">
         <img src="{path_prefix}assets/UAF.svg"/>
         <div class="wrapped">
-            <p>This tool was developed by the <a href="https://uaf-snap.org">Scenarios Network for Alaska & Arctic Planning (SNAP)</a> in collaboration with and funded by the <a href="https://wrcc.dri.edu">Western Regional Climate Center</a>. SNAP is a research group at the <a href="https://uaf-iarc.org/">International Arctic Research Center</a> at the <a href="https://uaf.edu/uaf/">University of Alaska Fairbanks</a>.</p>
+            <p>This tool was developed by the <a href="https://uaf-snap.org">Scenarios Network for Alaska & Arctic Planning (SNAP)</a> in collaboration with the <a href="https://wrcc.dri.edu">Western Regional Climate Center</a>. SNAP is a research group at the <a href="https://uaf-iarc.org/">International Arctic Research Center</a> at the <a href="https://uaf.edu/uaf/">University of Alaska Fairbanks</a>.</p>
             <p>Copyright &copy; {current_year} University of Alaska Fairbanks.  All rights reserved.</p>
             <p>UA is an AA/EO employer and educational institution and prohibits illegal discrimination against any individual.  <a href="https://www.alaska.edu/nondiscrimination/">Statement of Nondiscrimination</a> and <a href="https://www.alaska.edu/records/records/compliance/gdpr/ua-privacy-statement/">Privacy Statement</a>.</p>
         </div>
