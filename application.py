@@ -641,7 +641,7 @@ def update_monthly_rose_config(sid):
 # This function should return the filtered data,
 # so it can be used by both sxs rose and diff rose
 @app.callback(
-    Output("comparison-rose-data", "value"),
+    Output("comparison-rose-data", "data"),
     [Input("airports-dropdown", "value"), Input("rose-pcount", "value")],
 )
 def get_comparison_data(sid, pcount):
@@ -731,7 +731,7 @@ def make_empty_sxs_rose(empty_trace, subplot_args, rose_layout, rose_dict):
 
 @app.callback(
     Output("rose_sxs", "figure"),
-    [Input("comparison-rose-data", "value"), Input("units_selector", "value")],
+    [Input("comparison-rose-data", "data"), Input("units_selector", "value")],
 )
 def update_rose_sxs(rose_dict, units):
     """
@@ -848,7 +848,7 @@ def update_rose_sxs(rose_dict, units):
     return fig
 
 
-@app.callback(Output("rose_sxs", "config"), Input("comparison-rose-data", "value"))
+@app.callback(Output("rose_sxs", "config"), Input("comparison-rose-data", "data"))
 def update_sxs_rose_config(rose_dict):
     config = copy.deepcopy(luts.fig_configs)
     if "data_list" in rose_dict:
@@ -866,7 +866,7 @@ def update_sxs_rose_config(rose_dict):
 @app.callback(
     Output("rose_diff", "figure"),
     [
-        Input("comparison-rose-data", "value"),
+        Input("comparison-rose-data", "data"),
         Input("units_selector", "value"),
         Input("rose-pcount", "value"),
     ],
@@ -974,7 +974,7 @@ def update_diff_rose(rose_dict, units, pcount):
     return {"layout": rose_layout, "data": traces}
 
 
-@app.callback(Output("rose_diff", "config"), Input("comparison-rose-data", "value"))
+@app.callback(Output("rose_diff", "config"), Input("comparison-rose-data", "data"))
 def update_diff_rose_config(rose_dict):
     config = copy.deepcopy(luts.fig_configs)
     if "data_list" in rose_dict:
