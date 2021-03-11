@@ -52,7 +52,6 @@ tbody td span {
 }
 
 input[type="radio"] {
-    display: inline-block;
     margin-right: 1ex;
 }
 
