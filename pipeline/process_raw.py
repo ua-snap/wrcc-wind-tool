@@ -140,26 +140,37 @@ def adjust_station(station):
     cpt_dates = [pd.to_datetime(f"{ym[:4]}-{ym[5:]}-01") for ym in cpts_ym]
     slices = [slice("1980-01-01", cpt_dates[0])]
     if len(cpts) == 3:
-        # if difference between 1st and second breakpoint is
-        # not greater than 5 years, use first breakpoint
+        # handle case of two breakpoints
         if (cpt_dates[1] - cpt_dates[0]).days / 365 > 5:
+            # if difference between 1st and second breakpoint is
+            # greater than 5 years, use both breakpoints
             slices.append(slice(cpt_dates[0], cpt_dates[1]))
             slices.append(slice(cpt_dates[-1], "2019-12-31"))
         else:
+            # otherwise use only first breakpoint
             cpt_dates = cpt_dates[:1]
             slices.append(slice(cpt_dates[0], "2019-12-31"))
+    else:
+        # if only one breakpoint, append "recent" slice
+        slices.append(slice(cpt_dates[0], "2019-12-31"))
 
     station = station.set_index("ts")
     # "observed", or unbiased, slice taken to be the most recent
-    obs = station[slices[-1]]["sped"].values
-    # "simulated" or biased data are the more historical slices
-    sim = [station[sl]["sped"].values for sl in slices[:-1]]
-
+    obs = station[slices[-1]]["sped"]
+    # create new column of adjusted speed values
     station["sped_adj"] = station["sped"]
+
     for sl in slices[:-1]:
-        sim = station[sl]["sped"].values
+        # "simulated" or biased data are the more historical slices
+        sim = station[sl]["sped"]
         bc = BiasCorrection(obs, sim, sim)
-        station.loc[sl, "sped_adj"] = bc.correct()
+        station.loc[sl, "sped_adj"] = bc.correct(method="basic_quantile").values
+        # algorithm can adjust speed values to below zero 
+        # So just set all adjusted values less than 0 to 0
+        station.loc[station["sped_adj"] < 0, ["sped_adj", "drct"]] = 0
+        # also, no way to give direction to values adjusted "up" from 0.
+        # Just set these to zero as well. 
+        station.loc[station["sped"] == 0, "sped_adj"] = 0
 
     # construct changepoints dataframe for logging
     changepoints = pd.DataFrame(
