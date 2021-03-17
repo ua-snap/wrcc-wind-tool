@@ -68,13 +68,17 @@ def chunk_to_rose(station):
     Return accumulator of whatever the results of the
     incoming chunk are.
     """
-    # if coarse, bin into 8 categories, 36 otherwise
-    bin_list = [list(range(5, 356, 10)), list(np.arange(22.5, 338, 45))]
-    bname_list = [list(range(1, 36)), list(np.arange(4.5, 32, 4.5))]
-
     # bin into three different petal count categories: 8pt, 16pt, and 26pt
-    bin_list = [list(range(5, 356, 10)), list(np.arange(11.25, 349, 22.5)), list(np.arange(22.5, 338, 45))]
-    bname_list = [list(range(1, 36)), list(np.arange(2.25, 34, 2.25)), list(np.arange(4.5, 32, 4.5))]
+    bin_list = [
+        list(range(5, 356, 10)),
+        list(np.arange(11.25, 349, 22.5)),
+        list(np.arange(22.5, 338, 45)),
+    ]
+    bname_list = [
+        list(range(1, 36)),
+        list(np.arange(2.25, 34, 2.25)),
+        list(np.arange(4.5, 32, 4.5)),
+    ]
 
     # Accumulator dataframe.
     proc_cols = [
@@ -84,7 +88,6 @@ def chunk_to_rose(station):
         "count",
         "frequency",
         "decade",
-        # "coarse",
         "pcount",
     ]
     accumulator = pd.DataFrame(columns=proc_cols)
@@ -129,7 +132,6 @@ def chunk_to_rose(station):
                         "frequency": frequency,
                         "decade": station["decade"].iloc[0],
                         "month": station["month"].iloc[0],
-                        # "coarse": coarse,
                         "pcount": pcount,
                     },
                     ignore_index=True,
@@ -253,6 +255,8 @@ def process_roses(stations, ncpus, roses_fp, discard_obs_fp):
 
     # drop gusts column, discard obs with NaN in direction or speed
     stations = stations.drop(columns="gust_mph").dropna()
+    # set all nonzero wind speeds with 0 direction to 360. This might not be necessary.
+    stations.loc[(stations["wd"] == 0) & (stations["ws"] != 0), "wd"] = 360
 
     # first process roses for all available stations - that is, stations
     # with data at least as old as 2010-01-01
@@ -265,7 +269,7 @@ def process_roses(stations, ncpus, roses_fp, discard_obs_fp):
     # set month column to 0 for annual rose data
     summary_stations["month"] = 0
     # drop calms for chunking to rose
-    summary_stations = summary_stations[summary_stations["wd"] != 0].reset_index(
+    summary_stations = summary_stations[summary_stations["ws"] != 0].reset_index(
         drop=True
     )
 
@@ -322,7 +326,7 @@ def process_roses(stations, ncpus, roses_fp, discard_obs_fp):
 
     # finally can chunk to rose for comparison roses - first filter out calms
     compare_station_dfs = [
-        df[df["wd"] != 0].reset_index(drop=True) for df in compare_station_dfs
+        df[df["ws"] != 0].reset_index(drop=True) for df in compare_station_dfs
     ]
     # then break up by decade for chunking to rose
     compare_station_dfs = [
@@ -625,4 +629,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()    
+    main()
