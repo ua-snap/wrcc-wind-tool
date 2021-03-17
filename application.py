@@ -316,7 +316,7 @@ def get_rose_traces(d, traces, units, showlegend=False, lines=False):
             props["theta"].append(theta_list[0])
             props[
                 "hovertemplate"
-            ] = "%{r} change in %{fullData.name}<br>winds from %{theta}<extra></extra>"
+            ] = "%{r:.2f}% change in %{fullData.name}<br>winds from %{theta}<extra></extra>"
             traces.append(go.Scatterpolar(props))
         else:
             traces.append(go.Barpolar(props))
