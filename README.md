@@ -25,6 +25,7 @@ Set the `BASE_DIR` environmental variable to the path of the location you would 
 3. `render.py -f ancillary/raw_qc.ipynb -o ancillary`: executes the jupyter notebook for initial QC investigation of raw data. * May require extra steps to run.
 4. `process_raw.py`: Process the raw data into a pickeld file of all station data.
 5. `preprocess.py -n <number of cores> -rcxw`: preprocess the data for app ingest. Creates the remaining files tracked in `data/`.
+6. `prep_ckan.py -n <number of cores>`: prepares the cleaned and adjusted wind data for distribution on SNAP's CKAN. There is no script to facilitate transfer of these data, instead this was designed to be done on the same filesystem as the ultimate target directory and placed with `mv`. 
 
 * Namely, adding the pipenv python install as a kernel for jupyter, as has been done on the development machine. Not doing this is untested. 
 
