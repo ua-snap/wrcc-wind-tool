@@ -14,7 +14,7 @@ import plotly.graph_objs as go
 from dash.dependencies import Input, Output
 from plotly.subplots import make_subplots
 import luts
-from gui import layout, path_prefix
+from gui import layout
 
 
 # Read data blobs and other items used from env
@@ -30,7 +30,7 @@ roses = roses[roses["decade"] == "none"]
 # We set the requests_pathname_prefix to enable
 # custom URLs.
 # https://community.plot.ly/t/dash-error-loading-layout/8139/6
-app = dash.Dash(__name__, requests_pathname_prefix=path_prefix)
+app = dash.Dash(__name__)
 
 # AWS Elastic Beanstalk looks for application by default,
 # if this variable (application) isn't set you will get a WSGI error.
@@ -394,7 +394,7 @@ def update_rose(sid, units, pcount):
                 "showticksuffix": "last",
                 "tickcolor": "rgba(0, 0, 0, 0)",
                 "tick0": 0,
-                "dtick": {8:6, 16:4, 36:3}[pcount],
+                "dtick": {8: 6, 16: 4, 36: 3}[pcount],
                 "ticklen": 10,
                 "showline": False,  # hide the dark axis line
                 "tickfont": {"color": "#444"},
@@ -906,7 +906,7 @@ def update_diff_rose(rose_dict, units, pcount):
                 "showticksuffix": "last",
                 "tickcolor": "rgba(0, 0, 0, 0)",
                 "tick0": 0,
-                "dtick": {8:2, 16:2, 36:1}[pcount],
+                "dtick": {8: 2, 16: 2, 36: 1}[pcount],
                 "ticklen": 10,
                 "showline": False,  # hide the dark axis line
                 "tickfont": {"color": "#444"},
@@ -990,4 +990,4 @@ def update_diff_rose_config(rose_dict):
 
 
 if __name__ == "__main__":
-    application.run(debug=os.environ["FLASK_DEBUG"], port=8080)
+    application.run(debug=os.getenv("FLASK_DEBUG", default=False), port=8080)

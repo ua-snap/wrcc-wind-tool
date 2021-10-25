@@ -6,14 +6,13 @@ GUI code
 import os
 from datetime import datetime
 import plotly.graph_objs as go
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import html, dcc
 import dash_dangerously_set_inner_html as ddsih
 import luts
 
 
 # For hosting
-path_prefix = os.getenv("REQUESTS_PATHNAME_PREFIX") or "/"
+path_prefix = os.getenv("DASH_REQUESTS_PATHNAME_PREFIX")
 
 map_figure = go.Figure(data=luts.map_airports_trace, layout=luts.map_layout)
 
