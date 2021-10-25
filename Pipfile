@@ -14,7 +14,6 @@ scipy = "*"
 matplotlib = "*"
 ruptures = "*"
 jupyter = "*"
-bias-correction = {git = "https://github.com/pankajkarman/bias_correction.git"}
 xarray = "*"
 
 [dev-packages]

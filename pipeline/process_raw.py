@@ -10,8 +10,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import ruptures as rpt
+
+# note: this would not install properly on AWS EB!
+# only needed for preprocessing, not the app, so
+# it has been removed as a dependency from this project's Pipfile
+# bias-correction = {git = "https://github.com/pankajkarman/bias_correction.git"}
+# git+https://github.com/pankajkarman/bias_correction.git#egg=bias-correction
 from bias_correction import BiasCorrection
 from scipy.signal import find_peaks
+
 # this hack is done to alllow import from luts.py in app dir
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from luts import decades
@@ -165,11 +172,11 @@ def adjust_station(station):
         sim = station[sl]["sped"]
         bc = BiasCorrection(obs, sim, sim)
         station.loc[sl, "sped_adj"] = bc.correct(method="basic_quantile").values
-        # algorithm can adjust speed values to below zero 
+        # algorithm can adjust speed values to below zero
         # So just set all adjusted values less than 0 to 0
         station.loc[station["sped_adj"] < 0, ["sped_adj", "drct"]] = 0
         # also, no way to give direction to values adjusted "up" from 0.
-        # Just set these to zero as well. 
+        # Just set these to zero as well.
         station.loc[station["sped"] == 0, "sped_adj"] = 0
 
     # construct changepoints dataframe for logging
