@@ -314,6 +314,9 @@ help_text = wrap_in_section(
 <p>Five stations displayed two discontinuities. For these, we applied the quantile mapping adjustments to the later period.</p>
 <p>We also removed obviously wrong reports (e.g., sustained wind speeds exceeding 110 mph) and short-duration spikes and dips identified using a signal-processing technique for <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html">identifying outliers</a>.</p>
 
+<h5 class="title is-5">Data download</h5>
+<p>Data visualized in this tool can be <a href="https://catalog.snap.uaf.edu/geonetwork/srv/eng/catalog.search#/metadata/00590305-fc2c-4b2c-8b22-7f8875b18037">downloaded here</a>.</p>
+
 <h4 class="title is-4">Similar tools</h4>
 
 <ul>
@@ -339,8 +342,10 @@ footer = html.Footer(
         <img src="{path_prefix}assets/UAF.svg"/>
         <div class="wrapped">
             <p>This tool was developed by the <a href="https://uaf-snap.org">Scenarios Network for Alaska & Arctic Planning (SNAP)</a> in collaboration with the <a href="https://wrcc.dri.edu">Western Regional Climate Center</a>. SNAP is a research group at the <a href="https://uaf-iarc.org/">International Arctic Research Center</a> at the <a href="https://uaf.edu/uaf/">University of Alaska Fairbanks</a>.</p>
+            <p>Contact us at <a href="mailto:uaf-snap-data-tools@alaska.edu">uaf-snap-data-tools@alaska.edu</a> if you have questions.</p>
             <p>Copyright &copy; {current_year} University of Alaska Fairbanks.  All rights reserved.</p>
             <p>UA is an AA/EO employer and educational institution and prohibits illegal discrimination against any individual.  <a href="https://www.alaska.edu/nondiscrimination/">Statement of Nondiscrimination</a> and <a href="https://www.alaska.edu/records/records/compliance/gdpr/ua-privacy-statement/">Privacy Statement</a>.</p>
+            <p>UA is committed to providing accessible websites. <a href="https://www.alaska.edu/webaccessibility/">Learn more about UA&rsquo;s notice of web accessibility</a>.  If we can help you access this website&rsquo;s content, <a href="mailto:uaf-snap-data-tools@alaska.edu">email us!</a></p>
         </div>
     </div>
 </footer>
