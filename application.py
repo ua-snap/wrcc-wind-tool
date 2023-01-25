@@ -39,15 +39,12 @@ app.index_string = f"""
 <!DOCTYPE html>
 <html>
     <head>
-        <!-- Global site tag (gtag.js) - Google Analytics -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-1J75Z1N5FP"></script>
-        <script>
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){{dataLayer.push(arguments);}}
-          gtag('js', new Date());
-
-          gtag('config', 'G-1J75Z1N5FP');
-        </script>
+        <script async defer
+            data-website-id="094ecd65-f147-41c8-b740-5f31cdf18755"
+            src="https://umami.snap.uaf.edu/umami.js"
+            data-do-not-track="true"
+            data-domains="snap.uaf.edu"
+        ></script>
         {{%metas%}}
         <title>{{%title%}}</title>
         <meta charset="utf-8"/>
