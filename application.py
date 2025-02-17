@@ -93,7 +93,7 @@ app.layout = layout
 
 @app.callback(Output("airports-dropdown", "value"), [Input("map", "clickData")])
 def update_place_dropdown(selected_on_map):
-    """ If user clicks on the map, update the drop down. """
+    """If user clicks on the map, update the drop down."""
     # Look up ID by name -- kind of backwards, but
     # it's because we can't bundle much data into
     # map click handles.
@@ -107,10 +107,11 @@ def update_place_dropdown(selected_on_map):
 
 
 @app.callback(
-    Output("map", "figure"), Input("airports-dropdown", "value"),
+    Output("map", "figure"),
+    Input("airports-dropdown", "value"),
 )
 def update_selected_airport_on_map(sid):
-    """ Draw a second trace on the map with one community highlighted. """
+    """Draw a second trace on the map with one community highlighted."""
 
     return {
         "data": [
@@ -251,7 +252,11 @@ def update_exceedance_plot(sid, units):
                 "linecolor": "black",
                 "fixedrange": True,
             },
-            "xaxis": {"showline": True, "linecolor": "black", "fixedrange": True,},
+            "xaxis": {
+                "showline": True,
+                "linecolor": "black",
+                "fixedrange": True,
+            },
             "font": {"size": 14, "family": "Open Sans"},
             "hovermode": "closest",
             "title_x": 0.5,
@@ -311,9 +316,9 @@ def get_rose_traces(d, traces, units, showlegend=False, lines=False):
             # append first item of each to close the lines
             props["r"].append(r_list[0])
             props["theta"].append(theta_list[0])
-            props[
-                "hovertemplate"
-            ] = "%{r:.2f}% change in %{fullData.name}<br>winds from %{theta}<extra></extra>"
+            props["hovertemplate"] = (
+                "%{r:.2f}% change in %{fullData.name}<br>winds from %{theta}<extra></extra>"
+            )
             traces.append(go.Scatterpolar(props))
         else:
             traces.append(go.Barpolar(props))
@@ -474,9 +479,11 @@ def update_rose_monthly(sid, units, pcount):
             if_show_legend = month == 1  # only show the first legend
             traces = []
             d = station_rose[station_rose["month"] == month]
-            max_axes = max_axes.append(
-                get_rose_traces(d, traces, units, if_show_legend), ignore_index=True
-            )
+            data = get_rose_traces(d, traces, units, if_show_legend)
+            if isinstance(data, pd.Series):
+                data = data.to_frame().T  # Convert Series to DataFrame
+
+            max_axes = pd.concat([max_axes, data], ignore_index=True)
             for trace in traces:
                 fig.add_trace(trace, row=i, col=j)
             month += 1
@@ -581,7 +588,7 @@ def update_monthly_rose_config(sid):
 
 @app.callback(Output("wep_box", "figure"), [Input("airports-dropdown", "value")])
 def update_box_plots(sid):
-    """ Generate box plot for monthly averages """
+    """Generate box plot for monthly averages"""
 
     d = mean_wep.loc[(mean_wep["sid"] == sid)]
     station_name = luts.map_data.loc[sid]["real_name"]
@@ -808,9 +815,12 @@ def update_rose_sxs(rose_dict, units):
     max_axes = pd.DataFrame()
     for df, show_legend, i in zip(data_list, [True, False], [1, 2]):
         traces = []
-        max_axes = max_axes.append(
-            get_rose_traces(df, traces, units, show_legend), ignore_index=True
-        )
+        data = get_rose_traces(df, traces, units, show_legend)
+        if isinstance(data, pd.Series):
+            data = data.to_frame().T  # Convert Series to DataFrame
+
+        max_axes = pd.concat([max_axes, data], ignore_index=True)
+
         _ = [fig.add_trace(trace, row=1, col=i) for trace in traces]
 
     # Determine maximum r-axis and r-step.
@@ -877,7 +887,10 @@ def update_diff_rose(rose_dict, units, pcount):
     station_name = luts.map_data.loc[rose_dict["sid"]]["real_name"]
 
     rose_layout = {
-        "title": dict(text="", font=dict(size=18),),
+        "title": dict(
+            text="",
+            font=dict(size=18),
+        ),
         "height": 700,
         "font": dict(family="Open Sans", size=14),
         "margin": {"l": 0, "r": 0, "b": 20, "t": 75},

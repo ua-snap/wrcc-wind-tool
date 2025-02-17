@@ -12,9 +12,10 @@ import luts
 
 
 # For hosting
-path_prefix = os.getenv("DASH_REQUESTS_PATHNAME_PREFIX")
+path_prefix = os.getenv("DASH_REQUESTS_PATHNAME_PREFIX") or "/"
 
 map_figure = go.Figure(data=luts.map_airports_trace, layout=luts.map_layout)
+
 
 # Helper function
 def wrap_in_section(content, section_classes="", container_classes="", div_classes=""):
@@ -190,11 +191,19 @@ wind_rose_section = wrap_in_section(
         children=[
             html.Div(
                 className="column is-four-fifths",
-                children=[dcc.Graph(id="rose", figure=go.Figure(),),],
+                children=[
+                    dcc.Graph(
+                        id="rose",
+                        figure=go.Figure(),
+                    ),
+                ],
             ),
             html.Div(
                 className="column is-one-fifth",
-                children=[units_radios_field, rose_res_radios_field,],
+                children=[
+                    units_radios_field,
+                    rose_res_radios_field,
+                ],
             ),
         ],
     )
@@ -211,7 +220,10 @@ monthly_wind_rose_intro = wrap_in_section(
 )
 
 monthly_wind_rose_section = wrap_in_section(
-    dcc.Graph(id="rose_monthly", figure=go.Figure(),)
+    dcc.Graph(
+        id="rose_monthly",
+        figure=go.Figure(),
+    )
 )
 
 crosswind_intro = wrap_in_section(
@@ -226,7 +238,10 @@ crosswind_intro = wrap_in_section(
 )
 
 crosswind_section = wrap_in_section(
-    dcc.Graph(id="exceedance_plot", figure=go.Figure(),)
+    dcc.Graph(
+        id="exceedance_plot",
+        figure=go.Figure(),
+    )
 )
 
 wind_energy_intro = wrap_in_section(
@@ -248,7 +263,12 @@ wind_energy_intro = wrap_in_section(
     container_classes="content is-size-5",
 )
 
-wind_energy_section = wrap_in_section(dcc.Graph(id="wep_box", figure=go.Figure(),))
+wind_energy_section = wrap_in_section(
+    dcc.Graph(
+        id="wep_box",
+        figure=go.Figure(),
+    )
+)
 
 historical_roses_intro = wrap_in_section(
     ddsih.DangerouslySetInnerHTML(
@@ -262,7 +282,10 @@ historical_roses_intro = wrap_in_section(
 )
 
 historical_roses_section = wrap_in_section(
-    dcc.Graph(id="rose_sxs", figure=go.Figure(),)
+    dcc.Graph(
+        id="rose_sxs",
+        figure=go.Figure(),
+    )
 )
 
 historical_change_intro = wrap_in_section(
@@ -277,7 +300,10 @@ historical_change_intro = wrap_in_section(
 )
 
 historical_change_section = wrap_in_section(
-    dcc.Graph(id="rose_diff", figure=go.Figure(),),
+    dcc.Graph(
+        id="rose_diff",
+        figure=go.Figure(),
+    ),
 )
 
 help_text = wrap_in_section(
