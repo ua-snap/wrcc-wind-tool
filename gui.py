@@ -352,7 +352,7 @@ footer = html.Footer(
             <p>This tool was developed by the <a href="https://uaf-snap.org">Scenarios Network for Alaska & Arctic Planning (SNAP)</a> in collaboration with the <a href="https://wrcc.dri.edu">Western Regional Climate Center</a>. SNAP is a research group at the <a href="https://uaf-iarc.org/">International Arctic Research Center</a> at the <a href="https://uaf.edu/uaf/">University of Alaska Fairbanks</a>.</p>
             <p>Contact us at <a href="mailto:uaf-snap-data-tools@alaska.edu">uaf-snap-data-tools@alaska.edu</a> if you have questions.</p>
             <p>Copyright &copy; {current_year} University of Alaska Fairbanks.  All rights reserved.</p>
-            <p>UA is an affirmative action / equal opportunity employer, educational institution and provider, and prohibits illegal discrimination against any individual. <a href="https://www.alaska.edu/nondiscrimination/">Statement of Nondiscrimination</a> and <a href="https://www.alaska.edu/records/records/compliance/gdpr/ua-privacy-statement/">Privacy Statement</a>.</p>
+            <p>The <a href="https://www.alaska.edu/"> University of Alaska</a> is an Equal Opportunity/Equal Access Employer and Educational institution. The University is committed to a <a href="https://www.alaska.edu/nondiscrimination/">policy of non-discrimination</a> against individuals on the basis of any legally protected status.</p>
             <p>UA is committed to providing accessible websites. <a href="https://www.alaska.edu/webaccessibility/">Learn more about UA&rsquo;s notice of web accessibility</a>.  If we can help you access this website&rsquo;s content, <a href="mailto:uaf-snap-data-tools@alaska.edu">email us!</a></p>
         </div>
     </div>
