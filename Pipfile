@@ -4,8 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-dash = "*"
-plotly = "*"
 dash_dangerously_set_inner_html = "*"
 pandas = "*"
 ipykernel = "*"
@@ -15,6 +13,8 @@ matplotlib = "*"
 ruptures = "*"
 jupyter = "*"
 xarray = "*"
+plotly = "<6"
+dash = "<3"
 
 [dev-packages]
 flask = "*"
