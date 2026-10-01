@@ -37,6 +37,7 @@ Run via
 pipenv install
 export FLASK_APP=application.py
 export FLASK_DEBUG=1
+export CARTO_API_KEY=<your CARTO basemaps API key>
 pipenv run flask run
 ```
 

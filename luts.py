@@ -3,6 +3,7 @@
 Contains common lookup tables between GUI/application code
 """
 
+import os
 import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
@@ -131,7 +132,22 @@ map_airports_trace = go.Scattermapbox(
 map_layout = go.Layout(
     autosize=True,
     hovermode="closest",
-    mapbox=dict(style="carto-positron", zoom=3.25, center=dict(lat=63, lon=-158)),
+    mapbox=dict(
+        style="white-bg",
+        zoom=3.25,
+        center=dict(lat=63, lon=-158),
+        layers=[
+            dict(
+                below="traces",
+                sourcetype="raster",
+                sourceattribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+                source=[
+                    "https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png?key="
+                    + os.getenv("CARTO_API_KEY", "")
+                ],
+            )
+        ],
+    ),
     showlegend=False,
     margin=dict(l=0, r=0, t=0, b=0),
 )
